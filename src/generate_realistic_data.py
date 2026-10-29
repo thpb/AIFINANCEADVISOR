@@ -16,6 +16,7 @@ Output: data/transactions.csv with columns date, merchant, amount, category.
 """
 import _root  # noqa: F401
 
+import argparse
 import random
 from datetime import date, timedelta
 
@@ -70,8 +71,8 @@ def _decorate(name):
     return name
 
 
-def generate():
-    today = date.today()
+def generate(end=None):
+    today = end or date.today()
     start = today - timedelta(days=DAYS - 1)
     rows = []
 
@@ -116,7 +117,11 @@ def generate():
 
 
 def main():
-    df = generate()
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--end", type=date.fromisoformat, default=None,
+                        help="Last day of the data (YYYY-MM-DD). Default: today. "
+                             "Use 2026-10-29 to reproduce the reported results.")
+    df = generate(parser.parse_args().end)
     df.to_csv(OUT_PATH, index=False)
     print(f"Wrote {len(df)} transactions to {OUT_PATH}")
     print(f"From {df['date'].min()} to {df['date'].max()}")

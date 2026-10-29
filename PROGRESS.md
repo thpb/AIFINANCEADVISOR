@@ -81,3 +81,25 @@ If resuming in a new session: read the spec and this file, then continue from th
   `streamlit run` after changing code in `src/` other than `dashboard.py`.
 - The first advisor question in a conversation takes about 40-60 seconds on the RTX 3050 (the model reads
   the whole data summary); later ones are faster. Worth warming up before a live demo.
+
+# Improvement prompts (`../claude_code_improvement_prompts.md`)
+
+| # | Prompt | Status |
+|---|--------|--------|
+| 0 | CLAUDE.md project memory | Done |
+| 1 | Acceptance checklist, PASS/FAIL | Next |
+| 2 | More realistic training data | Not started |
+| 3 | Check categories with the real model | Not started |
+| 4 | Test the advisor with real Ollama | Not started |
+| 5 | Safe demo account | Not started |
+| 6 | Nothing crashes during the live demo | Not started |
+| 7 | Report material | Not started |
+| 8 | HOW_IT_WORKS.md for Q&A | Not started |
+| 9 | Final tidy-up, "Final submission" commit | Not started |
+
+## Notes from the improvement prompts
+
+- Prompt 0 asks to keep "baseline 73.0%, v2 81.9%" reproducible. Those are the spec's reference figures, not
+  results of this generator. The generator also used `date.today()`, so even our own numbers moved daily.
+  Added an optional `--end YYYY-MM-DD` to `generate_realistic_data.py` (default unchanged; verified
+  byte-identical output for `--end 2026-10-29`). Reported results: 75.6% / 87.0% with `--end 2026-10-29`.
