@@ -22,7 +22,7 @@ Progress and decisions: `PROGRESS.md` (read it first when resuming; update it an
 
 ```powershell
 python src/generate_realistic_data.py      # data/transactions.csv
-python src/train_improved_v2.py            # data/improved_model_v2.joblib (the app's model)
+python src/train_improved_v2.py --data data/transactions_v2.csv   # the app's model (larger Australian data)
 streamlit run src/dashboard.py
 ```
 

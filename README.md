@@ -53,9 +53,9 @@ The first run downloads the `all-MiniLM-L6-v2` embedding model (about 90 MB).
 
 Scripts work from any folder: each one starts with `import _root`, which switches to the project root and creates `data/`.
 
-### Results on the generated data
+### Results on the original data
 
-Time-based split: the oldest 80% of transactions train the model and the newest 20% test it (predicting new spending from old spending, like real use). Measured on 29 October 2026:
+Time-based split: the oldest 80% of transactions train the model and the newest 20% test it (predicting new spending from old spending, like real use). To reproduce exactly, generate with `--end 2026-10-29` (without it, the data ends today and the numbers shift a little):
 
 | Model | Accuracy |
 |-------|----------|
@@ -63,7 +63,38 @@ Time-based split: the oldest 80% of transactions train the model and the newest 
 | Improved v1: MiniLM embeddings + LightGBM (defaults) | 87.8% |
 | Improved v2: v1 + balanced classes, smaller trees, ambiguity flag | 87.0% |
 
-The generator builds 270 days back from today, so the numbers shift a little depending on the day you run it. On this data, v2 is not better than v1. v2 is still the app's model because balanced classes help the rare categories, but the comparison is reported as measured. Most mistakes come from shops that sell everything (Amazon, Target, Costco) and from the 4% of rows that are mislabelled on purpose.
+On this data, v2 is not better than v1. v2 is still the app's model because balanced classes help the rare categories, but the comparison is reported as measured. Most mistakes come from shops that sell everything (Amazon, Target, Costco) and from the 4% of rows that are mislabelled on purpose.
+
+### Larger, more Australian data (the app's current model)
+
+`generate_more_data.py` writes `data/transactions_v2.csv`: 4,000 transactions over 12 months with Australian merchants written the way bank statements show them ("COLES 0456 PARRAMATTA NS", "EFTPOS BUNNINGS"), entries typed the way quick add receives them ("uber home"), monthly bills and subscriptions, weekly groceries and more dining on weekends. The original generator and its results are unchanged.
+
+```powershell
+python src/generate_more_data.py --end 2026-10-29
+python src/train_baseline.py --data data/transactions_v2.csv
+python src/train_improved_v2.py --data data/transactions_v2.csv     # the app now uses this model
+python src/evaluate_models.py                                       # writes report_results.md
+```
+
+`evaluate_models.py` compares both models on the original data, the new data, and **unseen merchants** (10% of shops held out of training completely). See [report_results.md](report_results.md):
+
+| Test | Baseline | v2 | v2 + keyword hints |
+|------|----------|----|--------------------|
+| Original data, time split | 75.6% | 87.0% | 87.8% |
+| New data, time split | 86.5% | 85.6% | 87.4% |
+| New data, unseen merchants | 7.3% | 42.7% | 79.9% |
+
+The data is synthetic, so accuracy on a real bank statement is likely to be lower.
+
+### Going back to the original model
+
+The models trained on the original data were backed up to `data/models_backup_original/`. Either copy them back:
+
+```powershell
+Copy-Item data\models_backup_original\*.joblib data\
+```
+
+or retrain on the original data: `python src/train_improved_v2.py` (with no `--data`, it uses `data/transactions.csv`).
 
 ## Using your own bank CSV
 
@@ -101,8 +132,8 @@ If Groq retires a model, the app asks Groq which models exist and switches autom
 ## Tests
 
 ```powershell
-python -m unittest discover -s tests      # 134 unit tests, no network, no real model
-python -m unittest discover -s apptests   # 11 Streamlit AppTest flows (needs the trained model)
+python -m unittest discover -s tests      # 147 unit tests, no network, no real model
+python -m unittest discover -s apptests   # 16 Streamlit AppTest flows (needs the trained model)
 ```
 
 AppTest can't type into `st.data_editor`, so the edit/delete logic is covered by `tests/test_income_and_editing.py`. Check editing and deleting a row once by hand in a browser.
@@ -114,6 +145,8 @@ src/
   _root.py                   switch to the project root and create data/ (imported first by every script)
   generate_realistic_data.py synthetic, deliberately messy transactions (ambiguous shops, refunds, label noise)
   generate_sample_data.py    older, clean-only generator (kept for comparison)
+  generate_more_data.py      4,000 rows with Australian merchants, statement noise and typed entries
+  evaluate_models.py         baseline vs v2 on original data, new data and unseen merchants
   clean_data.py              clean_merchant(), add_features(), load_and_clean()
   train_baseline.py          TF-IDF + Logistic Regression
   train_improved.py          embeddings + LightGBM v1

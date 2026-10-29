@@ -85,8 +85,8 @@ If resuming in a new session: read the spec and this file, then continue from th
 |---|--------|--------|
 | 0 | CLAUDE.md project memory | Done |
 | 1 | Acceptance checklist, PASS/FAIL | Done |
-| 2 | More realistic training data | Next |
-| 3 | Check categories with the real model | Not started |
+| 2 | More realistic training data | Done |
+| 3 | Check categories with the real model | Next |
 | 4 | Test the advisor with real Ollama | Not started |
 | 5 | Safe demo account | Not started |
 | 6 | Nothing crashes during the live demo | Not started |
@@ -122,3 +122,18 @@ If resuming in a new session: read the spec and this file, then continue from th
 | 15 | Re-uploading a CSV adds nothing | PASS after fix | **Was only true within one browser session.** Now rows already stored are skipped (`db.only_new`). AppTest uploads the same file in two sessions |
 | 16 | Older app.db opens intact | PASS | Unit test builds an old-schema database |
 | 17 | All tests pass | PASS | 136 unit tests, 16 AppTests |
+
+## Prompt 2: more realistic training data
+
+- `src/generate_more_data.py` (seed 2026, `--end 2026-10-29`): 4,000 rows over 12 months, Australian merchants
+  with statement noise, 5% typed entries, monthly rent/bills/subscriptions, weekly groceries, weekend dining,
+  ambiguous shops and transfers, ~4% label noise, 60 refunds. US merchants kept.
+- `train_baseline.py`, `train_improved_v2.py`, `diagnose_model.py` take `--data`. Original models backed up to
+  `data/models_backup_original/`. **The app's v2 model is now trained on `transactions_v2.csv`** (85.8%).
+- `clean_merchant` also strips `EFTPOS ` and `VISA PURCHASE ` prefixes (original data has neither; original
+  results re-checked: still 75.6% / 87.0%).
+- `src/evaluate_models.py` -> `report_results.md`: original 75.6/87.0, new 86.5/85.6, unseen merchants
+  7.3/42.7 (79.9 with hints). On the new data v2 is slightly below the baseline; an experiment without the
+  `month` feature moved v2 by only 0.5 points, so the cause is that most test shops are already known.
+- 11 generator tests (`tests/test_generate_more_data.py`). 147 unit tests, 16 AppTests pass.
+- `check_categories.py` outputs: `data/check_categories_original.txt` and `data/check_categories_v2.txt`.

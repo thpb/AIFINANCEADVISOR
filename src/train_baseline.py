@@ -6,12 +6,21 @@ from old spending.
 """
 import _root  # noqa: F401
 
+import argparse
+
 import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 from clean_data import load_and_clean
+
+
+def data_path():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data", default="data/transactions.csv",
+                        help="Training CSV (default data/transactions.csv; data/transactions_v2.csv for the larger set)")
+    return parser.parse_args().data
 
 
 def time_split(df, train_share=0.8):
@@ -21,7 +30,9 @@ def time_split(df, train_share=0.8):
 
 
 def main():
-    df = load_and_clean("data/transactions.csv")
+    path = data_path()
+    print(f"Data: {path}")
+    df = load_and_clean(path)
     train, test = time_split(df)
 
     vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=1)

@@ -10,13 +10,13 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics import classification_report, confusion_matrix
 
 from clean_data import load_and_clean
-from train_baseline import time_split
+from train_baseline import data_path, time_split
 from train_improved import EMBED_MODEL, build_matrix
 from train_improved_v2 import NUMERIC_V2, add_ambiguity_feature
 
 
 def main():
-    df = add_ambiguity_feature(load_and_clean("data/transactions.csv"))
+    df = add_ambiguity_feature(load_and_clean(data_path()))
     _, test = time_split(df)
     clf = joblib.load("data/improved_model_v2.joblib")
     le = joblib.load("data/label_encoder_v2.joblib")

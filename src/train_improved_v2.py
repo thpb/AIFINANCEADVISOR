@@ -20,7 +20,7 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.preprocessing import LabelEncoder
 
 from clean_data import load_and_clean
-from train_baseline import time_split
+from train_baseline import data_path, time_split
 from train_improved import EMBED_MODEL, build_matrix
 
 AMBIGUOUS_KEYWORDS = ["AMAZON", "TARGET", "WALMART", "COSTCO", "VENMO", "PAYPAL"]
@@ -41,7 +41,9 @@ def make_classifier():
 
 
 def main():
-    df = add_ambiguity_feature(load_and_clean("data/transactions.csv"))
+    path = data_path()
+    print(f"Data: {path}")
+    df = add_ambiguity_feature(load_and_clean(path))
     train, test = time_split(df)
     embedder = SentenceTransformer(EMBED_MODEL)
 

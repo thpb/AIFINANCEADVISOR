@@ -6,7 +6,7 @@ import pandas as pd
 
 def clean_merchant(raw: str) -> str:
     s = str(raw).upper()
-    s = re.sub(r"^(SQ \*|SP \*|TST\*|DOORDASH\*)", "", s)   # processor prefixes
+    s = re.sub(r"^(SQ \*|SP \*|TST\*|DOORDASH\*|EFTPOS |VISA PURCHASE )", "", s)   # processor prefixes
     s = re.sub(r"#\d+", "", s)                               # store numbers
     s = re.sub(r"\b\d{4,}\b", "", s)                         # long numeric codes
     s = re.sub(r"[^A-Z0-9&' ]", " ", s)                      # punctuation noise
