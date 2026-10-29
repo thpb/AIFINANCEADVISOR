@@ -16,7 +16,7 @@ If resuming in a new session: read the spec and this file, then continue from th
 | 7 | `advisor.py`, `advisor_charts.py` + tests (network mocked) | Done |
 | 8 | `ui.py` + `dashboard.py` | Done |
 | 9 | AppTest scripts, manual browser pass | Done (except hand-editing a grid cell, see below) |
-| 10 | README, final test run, zip | **In progress** |
+| 10 | README, final test run, zip | Done |
 
 ## Phase 9 results
 
@@ -32,9 +32,16 @@ If resuming in a new session: read the spec and this file, then continue from th
   synthetic clicks didn't drive it reliably. The logic is covered by `tests/test_income_and_editing.py`;
   someone should check it once in a browser.
 
-## Where phase 10 is
+## Phase 10 results
 
-- Next: README, final full test run, zip without `data/` contents, `venv` or `__pycache__`.
+- README written (setup, run order, measured accuracies, CSV import, AI engines, tests, structure, credits).
+- Final run: 134 unit tests and 11 AppTest flows, all passing.
+- Zip: `../expense-categorizer.zip`, built with `git archive` (tracked files only: no `data/` contents,
+  `venv` or `__pycache__`).
+
+## Remaining
+
+- Hand-check editing and deleting a row in both editors (Spending, Income) in a browser.
 
 ## Test status
 
