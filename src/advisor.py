@@ -250,6 +250,10 @@ def pick_visual(question, categories, months):
     messages = [{"role": "system", "content": advisor_charts.router_prompt(categories, months)},
                 {"role": "user", "content": question}]
     try:
-        return advisor_charts.validate_spec(_call_llm_json(messages), categories, months)
+        spec = advisor_charts.validate_spec(_call_llm_json(messages), categories, months)
     except Exception:
         return None
+    if spec and not spec["categories"] and spec["kind"] in ("monthly_spending", "category_totals"):
+        # Small models often drop the filter; the question itself names the categories.
+        spec["categories"] = advisor_charts.mentioned_categories(question, categories)
+    return spec

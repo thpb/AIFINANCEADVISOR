@@ -163,6 +163,16 @@ class AppFlowTests(unittest.TestCase):
         self.assertIn("Spending by category", self.texts("markdown"))
         self.assertIn("$818.64, which doesn't come from your data", self.texts("warning"))
 
+    def test_follow_up_may_quote_earlier_plan(self):
+        self.go("AI advisor")
+        with mock.patch("advisor.requests.post", return_value=ollama_reply("Here is the plan.")):
+            self.at.chat_input[0].set_value("How can I save $200 this month?").run()
+        cut = self.at.dataframe[0].value.iloc[0]["Spend less by"]
+        follow_up = f"As planned, spend ${cut:.2f} less on that category."
+        with mock.patch("advisor.requests.post", return_value=ollama_reply(follow_up)):
+            self.at.chat_input[0].set_value("Which category matters most?").run()
+        self.assertFalse(self.at.warning, [w.value for w in self.at.warning])
+
     def test_advisor_unreachable(self):
         import requests
         self.go("AI advisor")

@@ -30,6 +30,11 @@ def wants_visual(question):
     return bool(VISUAL_RE.search(question or ""))
 
 
+def mentioned_categories(question, categories):
+    """Category names the question spells out ("my dining spending" -> ["Dining"])."""
+    return [c for c in categories if re.search(rf"\b{re.escape(c)}\b", question or "", re.I)]
+
+
 def router_prompt(categories, months):
     kinds = "\n".join(f"- {k}: {v}" for k, v in KINDS.items())
     return (

@@ -127,8 +127,8 @@ def _base(fig, height, legend=False):
         font=dict(color=ink(), size=13), hoverlabel=dict(font_size=13),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=None),
     )
-    fig.update_xaxes(gridcolor=grid, zeroline=False, fixedrange=True)
-    fig.update_yaxes(gridcolor=grid, zeroline=False, fixedrange=True)
+    fig.update_xaxes(gridcolor=grid, zeroline=False, fixedrange=True, automargin=True)
+    fig.update_yaxes(gridcolor=grid, zeroline=False, fixedrange=True, automargin=True, ticksuffix="  ")
     return fig
 
 

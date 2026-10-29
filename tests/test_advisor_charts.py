@@ -127,6 +127,15 @@ class BuildTests(unittest.TestCase):
         with mock.patch("advisor._call_llm_json", return_value={"kind": "category_totals"}):
             self.assertEqual(advisor.pick_visual("chart", CATS, MONTHS)["kind"], "category_totals")
 
+    def test_named_category_added_when_model_drops_it(self):
+        with mock.patch("advisor._call_llm_json", return_value={"kind": "monthly_spending"}):
+            spec = advisor.pick_visual("show my dining spending by month as a chart", CATS, MONTHS)
+        self.assertEqual(spec["categories"], ["Dining"])
+        with mock.patch("advisor._call_llm_json", return_value={"kind": "monthly_spending", "categories": ["Shopping"]}):
+            spec = advisor.pick_visual("show my dining spending by month", CATS, MONTHS)
+        self.assertEqual(spec["categories"], ["Shopping"])      # the model's valid choice is kept
+        self.assertEqual(ac.mentioned_categories("my spending by category", CATS), [])
+
 
 if __name__ == "__main__":
     unittest.main()

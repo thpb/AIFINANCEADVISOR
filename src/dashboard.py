@@ -245,9 +245,9 @@ if ss.pending:
             if kind == "Expense":
                 cats = CATEGORIES if e["category"] in CATEGORIES else CATEGORIES + [e["category"]]
                 category = c4.selectbox("Category", cats, index=cats.index(e["category"]))
-            b1, b2, _ = st.columns([1, 1, 6])
-            save = b1.form_submit_button("Save", type="primary", width="stretch")
-            cancel = b2.form_submit_button("Cancel", width="stretch")
+            with st.container(horizontal=True):
+                save = st.form_submit_button("Save", type="primary")
+                cancel = st.form_submit_button("Cancel")
         if save:
             if not who.strip():
                 st.error("Add a merchant name before saving.")
@@ -555,8 +555,8 @@ def page_transactions():
                                                                             required=True),
                                "source": st.column_config.TextColumn("Added via", disabled=True)})
             updates, deleted = table_edits.editor_changes(shown, ss.get("txn_editor"))
-            b1, b2, info = st.columns([1, 1, 4], vertical_alignment="center")
-            if b1.button("Save changes", type="primary", disabled=not (updates or deleted), key="txn_save"):
+            row = st.container(horizontal=True, vertical_alignment="center")
+            if row.button("Save changes", type="primary", disabled=not (updates or deleted), key="txn_save"):
                 for tid, row in updates.items():
                     db.update_transaction(uid, tid, table_edits.as_date_text(row["date"]), row["merchant"],
                                           row["amount"], row["category"])
@@ -566,10 +566,10 @@ def page_transactions():
                 flash("✅", f"Saved {pending_text(updates, deleted).replace(' not saved yet.', '')}.")
                 ss.pop("txn_editor", None)
                 st.rerun()
-            if b2.button("Discard", disabled=not (updates or deleted), key="txn_discard"):
+            if row.button("Discard", disabled=not (updates or deleted), key="txn_discard"):
                 ss.pop("txn_editor", None)
                 st.rerun()
-            info.caption(pending_text(updates, deleted))
+            row.caption(pending_text(updates, deleted))
             out = spend.assign(date=spend["date"].dt.strftime("%Y-%m-%d"))[
                 ["date", "merchant", "amount", "predicted_category"]].rename(columns={"predicted_category": "category"})
             st.download_button("Download as CSV", out.to_csv(index=False), file_name="transactions.csv",
@@ -596,18 +596,18 @@ def page_transactions():
                                "source": st.column_config.TextColumn("From", required=True),
                                "amount": st.column_config.NumberColumn("Amount", format="dollar", required=True)})
             updates, deleted = table_edits.editor_changes(shown, ss.get("income_editor"))
-            b1, b2, info = st.columns([1, 1, 4], vertical_alignment="center")
-            if b1.button("Save changes", type="primary", disabled=not (updates or deleted), key="inc_save"):
+            row = st.container(horizontal=True, vertical_alignment="center")
+            if row.button("Save changes", type="primary", disabled=not (updates or deleted), key="inc_save"):
                 for iid, row in updates.items():
                     db.update_income(uid, iid, table_edits.as_date_text(row["date"]), row["source"], row["amount"])
                 db.delete_income(uid, deleted)
                 flash("✅", "Income saved.")
                 ss.pop("income_editor", None)
                 st.rerun()
-            if b2.button("Discard", disabled=not (updates or deleted), key="inc_discard"):
+            if row.button("Discard", disabled=not (updates or deleted), key="inc_discard"):
                 ss.pop("income_editor", None)
                 st.rerun()
-            info.caption(pending_text(updates, deleted))
+            row.caption(pending_text(updates, deleted))
 
     with t_review:
         review = corrections.needs_review(spend).head(15)
@@ -751,7 +751,9 @@ def handle(question, history):
     answer, new_history = advisor.ask_advisor(question, history, note)
     sent = question + (advisor.NOTE_MARK + note + "]" if note else "")
     info["model"] = advisor.last_model()
-    info["unverified"] = money_facts.unverified_amounts(answer, [history[1]["content"], sent])
+    # References: the data summary plus every question with its app note (earlier plans count too).
+    refs = [m["content"] for m in history if m["role"] == "user"] + [sent]
+    info["unverified"] = money_facts.unverified_amounts(answer, refs)
     ss.answers[hash(answer)] = info
     return new_history
 
@@ -798,10 +800,10 @@ def page_advisor():
         ss.history, ss.answers = None, {}
         st.rerun()
     st.caption("Try asking")
-    cols = st.columns(len(TRY_ASKING))
-    for col, q in zip(cols, TRY_ASKING):
-        if col.button(q.replace("$", "\\$"), key=f"try_{q}", width="stretch"):
-            ss.queued = q
+    with st.container(horizontal=True):
+        for q in TRY_ASKING:
+            if st.button(q.replace("$", "\\$"), key=f"try_{q}"):
+                ss.queued = q
     st.caption('For a chart or table, ask things like "show my dining spending by month as a chart", '
                '"top 10 purchases" or "income vs spending by month".')
     typed = st.chat_input("Ask a question about your spending...")
@@ -816,7 +818,8 @@ def page_advisor():
                 answer, new_history = advisor.get_advice(ss.history)
                 ss.answers[hash(answer)] = {
                     "model": advisor.last_model(),
-                    "unverified": money_facts.unverified_amounts(answer, [ss.history[1]["content"]])}
+                    "unverified": money_facts.unverified_amounts(
+                        answer, [m["content"] for m in new_history if m["role"] == "user"])}
                 ss.history = new_history
             else:
                 ss.history = handle(question, ss.history)

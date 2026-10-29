@@ -15,20 +15,31 @@ If resuming in a new session: read the spec and this file, then continue from th
 | 6 | `budgets.py`, `planning.py`, `savings.py`, `table_edits.py`, `money_facts.py` + tests | Done |
 | 7 | `advisor.py`, `advisor_charts.py` + tests (network mocked) | Done |
 | 8 | `ui.py` + `dashboard.py` | Done |
-| 9 | AppTest scripts, manual browser pass | **In progress** |
-| 10 | README, final test run, zip | Not started |
+| 9 | AppTest scripts, manual browser pass | Done (except hand-editing a grid cell, see below) |
+| 10 | README, final test run, zip | **In progress** |
 
-## Where phase 9 is
+## Phase 9 results
 
-- Done: `apptests/test_app.py` (10 AppTest flows: every page, login gate, sentence + hint caption, correction
-  learns a rule, income sentence + Saved stat, Expense/Income radio switch, budget toast after saving,
-  forecast page, advisor savings plan, advisor chart + number-check warning, Ollama unreachable). All pass.
-- Next: manual browser pass (light/dark, phone width, no clipped title, no garbled $, edit/delete in each editor).
+- `apptests/test_app.py`: 11 AppTest flows, all passing (adds: a follow-up answer may quote an earlier plan).
+- Browser pass with the real `qwen2.5:3b-instruct-q8_0` on Ollama: login, Overview, Plan ahead, Transactions,
+  AI advisor; dark and light mode; 375px phone width (no horizontal scroll, title not clipped); no garbled `$`.
+- Forecast checked by hand: $3,951.44 x 31/29 = $4,224; $4,800 - $4,224 = $576 (12%). Matches the app.
+- Fixed during the pass: clipped bar-chart category labels (axis automargin), squashed button rows (now
+  horizontal containers), the 3B model dropping `categories` from chart requests (code now adds categories
+  the question names), and the number check flagging amounts from an earlier savings plan (references now
+  include every app note in the conversation).
+- **Not done by me**: editing/deleting a cell in `st.data_editor` by hand. The grid is canvas-based and
+  synthetic clicks didn't drive it reliably. The logic is covered by `tests/test_income_and_editing.py`;
+  someone should check it once in a browser.
+
+## Where phase 10 is
+
+- Next: README, final full test run, zip without `data/` contents, `venv` or `__pycache__`.
 
 ## Test status
 
-`python -m unittest discover -s tests`: 133 tests, all passing.
-`python -m unittest discover -s apptests`: 10 AppTest flows, all passing (needs the trained model).
+`python -m unittest discover -s tests`: 134 tests, all passing.
+`python -m unittest discover -s apptests`: 11 AppTest flows, all passing (needs the trained model).
 
 ## Measured results (generated data, time-based 80/20 split, generated 2026-10-29)
 
@@ -54,3 +65,12 @@ If resuming in a new session: read the spec and this file, then continue from th
   are both accepted.
 - The sidebar engine/model/key settings are written to `os.environ` (as the spec says), so they are
   process-wide. Fine for a local single-user app.
+- Added `src/seed_demo.py` (not in the spec): creates a local demo account (demo / demo123) loaded with the
+  generated data, a fortnightly salary and budgets, for the live demo.
+- Number check references = the data summary + every user message with its app note in the conversation
+  (the spec said "the question with its app note"); otherwise follow-ups quoting an earlier plan get flagged.
+- `pick_visual` adds category names spelled out in the question when the model leaves `categories` empty.
+- Streamlit's file watcher did not reload the edited `advisor` module during the pass; restart
+  `streamlit run` after changing code in `src/` other than `dashboard.py`.
+- The first advisor question in a conversation takes about 40-60 seconds on the RTX 3050 (the model reads
+  the whole data summary); later ones are faster. Worth warming up before a live demo.
