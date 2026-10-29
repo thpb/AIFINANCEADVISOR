@@ -173,6 +173,63 @@ class AppFlowTests(unittest.TestCase):
             self.at.chat_input[0].set_value("Which category matters most?").run()
         self.assertFalse(self.at.warning, [w.value for w in self.at.warning])
 
+    def test_correction_fixes_past_and_future(self):
+        self.go("Transactions")
+        self.assertIn("Worth a second look (1)", [t.label for t in self.at.tabs])
+        self.quick_add("amazon.com 20")
+        box = self.at.get_by_key("confirm_box")
+        box.selectbox[0].set_value("Shopping")
+        box.button[0].click().run()
+        txns = db.get_transactions(self.uid)
+        amazon = txns[txns["merchant"].str.upper() == "AMAZON.COM"]
+        self.assertEqual(len(amazon), 2)
+        self.assertEqual(set(amazon["predicted_category"]), {"Shopping"})      # the earlier one was fixed
+        self.assertTrue((amazon["confidence"] == 1.0).all())
+        self.assertTrue(any("updated 1 earlier one" in str(t.value) for t in self.at.toast))
+        self.go("Transactions")
+        self.assertIn("Worth a second look (0)", [t.label for t in self.at.tabs])  # disappears when corrected
+        self.quick_add("amazon.com 15")                                          # future ones follow the rule
+        self.assertEqual(self.at.get_by_key("confirm_box").selectbox[0].value, "Shopping")
+        self.assertIn("comes from a correction you made earlier", self.texts("caption"))
+
+    def test_over_budget_alert_after_saving(self):
+        db.set_budget(self.uid, "Dining", 40)
+        self.at.run()
+        self.quick_add("lunch 45")
+        self.at.get_by_key("confirm_box").button[0].click().run()
+        toasts = [str(t.value).replace("\\$", "$") for t in self.at.toast]
+        self.assertIn("Dining is $5 over its $40 budget.", toasts)
+
+    def test_local_model_box_switches_model(self):
+        self.go("AI advisor")
+        self.at.text_input(key="local_model").set_value("llama3.2:3b").run()
+        with mock.patch("advisor.requests.post", return_value=ollama_reply("Fine.")) as post:
+            self.at.chat_input[0].set_value("Am I on track with my budgets?").run()
+        self.assertEqual(post.call_args.kwargs["json"]["model"], "llama3.2:3b")
+        self.assertIn("Answered by Llama 3.2 3B on this computer (4-bit)", self.texts("caption"))
+        self.at.text_input(key="local_model").set_value("qwen2.5:3b-instruct-q8_0").run()
+
+    def test_groq_without_key_explains(self):
+        self.go("AI advisor")
+        with mock.patch.dict(os.environ, {"GROQ_API_KEY": ""}):
+            self.at.radio(key="engine").set_value("Groq (free cloud)").run()
+            self.at.chat_input[0].set_value("Am I on track with my budgets?").run()
+        self.assertIn("Add your Groq API key in the sidebar", self.texts("error"))
+        self.at.radio(key="engine").set_value("Local (Ollama)").run()
+
+    def test_reuploading_csv_adds_nothing(self):
+        csv = b"date,merchant,amount\n05/10/2026,BUNNINGS,45.50\n06/10/2026,ALDI,30\n06/10/2026,ALDI,30\n"
+        before = len(db.get_transactions(self.uid))
+        self.at.file_uploader[0].upload("bank.csv", csv, "text/csv").run()
+        self.assertFalse(self.at.exception, self.at.exception)
+        self.assertEqual(len(db.get_transactions(self.uid)), before + 3)
+        again = AppTest.from_file(APP, default_timeout=120)   # a new browser session, same account
+        again.session_state["user_id"] = self.uid
+        again.run()
+        again.file_uploader[0].upload("bank.csv", csv, "text/csv").run()
+        self.assertEqual(len(db.get_transactions(self.uid)), before + 3)
+        self.assertTrue(any("Skipped 3 already in your account" in str(t.value) for t in again.toast))
+
     def test_advisor_unreachable(self):
         import requests
         self.go("AI advisor")

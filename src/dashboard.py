@@ -318,15 +318,20 @@ def page_overview():
                         df = raw[["date", "merchant", "amount"]].dropna().copy()
                         df["date"] = parse_user_dates(df["date"])
                         df["amount"] = pd.to_numeric(df["amount"].astype(str).str.replace(r"[$,]", "", regex=True))
-                        with st.spinner(f"Categorizing {len(df)} transactions..."):
-                            n = save_new(df.reset_index(drop=True), "upload")
+                        new = db.only_new(uid, df).reset_index(drop=True)   # re-uploads add nothing
+                        skipped = len(df) - len(new)
+                        n = 0
+                        if len(new):
+                            with st.spinner(f"Categorizing {len(new)} transactions..."):
+                                n = save_new(new, "upload")
                     except Exception as err:
                         st.error(ui.esc(f"Couldn't import that file: {err} Check that it has date, merchant and "
                                         "amount columns."))
                     else:
                         ss.imported_files.append(file_id)   # a rerun must not import it again
                         ss.history = None
-                        flash("📥", f"Imported and categorized {n} transactions from {up.name}.")
+                        note = f" Skipped {skipped} already in your account." if skipped else ""
+                        flash("📥", f"Imported and categorized {n} transactions from {up.name}.{note}")
                         st.rerun()
         with t_hand, st.form("by_hand", clear_on_submit=True):
             c1, c2, c3, c4 = st.columns(4)
@@ -524,6 +529,17 @@ def page_plan():
 
 # ---------------------------------------------------------------- Transactions
 
+def editor_key(name):
+    """Widget key for a data editor; reset_editor() changes it so the grid redraws from the database."""
+    return f"{name}_{ss.get(name + '_version', 0)}"
+
+
+def reset_editor(name):
+    # Removing the old key alone leaves unsaved edits showing in the browser grid, so start a new widget.
+    ss.pop(editor_key(name), None)
+    ss[name + "_version"] = ss.get(name + "_version", 0) + 1
+
+
 def pending_text(updates, deleted):
     parts = []
     if updates:
@@ -546,7 +562,7 @@ def page_transactions():
             shown = spend.sort_values(["date", "id"], ascending=False).set_index("id")[
                 ["date", "merchant", "amount", "predicted_category", "source"]].rename(
                 columns={"predicted_category": "category"})
-            st.data_editor(shown, key="txn_editor", num_rows="delete", hide_index=True, alt="Your transactions",
+            st.data_editor(shown, key=editor_key("txn_editor"), num_rows="delete", hide_index=True, alt="Your transactions",
                            column_config={
                                "date": st.column_config.DateColumn("Date", format="DD/MM/YYYY", required=True),
                                "merchant": st.column_config.TextColumn("Merchant", required=True),
@@ -554,7 +570,7 @@ def page_transactions():
                                "category": st.column_config.SelectboxColumn("Category", options=CATEGORIES,
                                                                             required=True),
                                "source": st.column_config.TextColumn("Added via", disabled=True)})
-            updates, deleted = table_edits.editor_changes(shown, ss.get("txn_editor"))
+            updates, deleted = table_edits.editor_changes(shown, ss.get(editor_key("txn_editor")))
             row = st.container(horizontal=True, vertical_alignment="center")
             if row.button("Save changes", type="primary", disabled=not (updates or deleted), key="txn_save"):
                 for tid, row in updates.items():
@@ -564,10 +580,10 @@ def page_transactions():
                         learn(row["merchant"], row["category"])
                 db.delete_transactions(uid, deleted)
                 flash("✅", f"Saved {pending_text(updates, deleted).replace(' not saved yet.', '')}.")
-                ss.pop("txn_editor", None)
+                reset_editor("txn_editor")
                 st.rerun()
             if row.button("Discard", disabled=not (updates or deleted), key="txn_discard"):
-                ss.pop("txn_editor", None)
+                reset_editor("txn_editor")
                 st.rerun()
             row.caption(pending_text(updates, deleted))
             out = spend.assign(date=spend["date"].dt.strftime("%Y-%m-%d"))[
@@ -590,22 +606,22 @@ def page_transactions():
         if not income.empty:
             st.subheader("Income")
             shown = income.sort_values(["date", "id"], ascending=False).set_index("id")[["date", "source", "amount"]]
-            st.data_editor(shown, key="income_editor", num_rows="delete", hide_index=True, alt="Your income",
+            st.data_editor(shown, key=editor_key("income_editor"), num_rows="delete", hide_index=True, alt="Your income",
                            column_config={
                                "date": st.column_config.DateColumn("Date", format="DD/MM/YYYY", required=True),
                                "source": st.column_config.TextColumn("From", required=True),
                                "amount": st.column_config.NumberColumn("Amount", format="dollar", required=True)})
-            updates, deleted = table_edits.editor_changes(shown, ss.get("income_editor"))
+            updates, deleted = table_edits.editor_changes(shown, ss.get(editor_key("income_editor")))
             row = st.container(horizontal=True, vertical_alignment="center")
             if row.button("Save changes", type="primary", disabled=not (updates or deleted), key="inc_save"):
                 for iid, row in updates.items():
                     db.update_income(uid, iid, table_edits.as_date_text(row["date"]), row["source"], row["amount"])
                 db.delete_income(uid, deleted)
                 flash("✅", "Income saved.")
-                ss.pop("income_editor", None)
+                reset_editor("income_editor")
                 st.rerun()
             if row.button("Discard", disabled=not (updates or deleted), key="inc_discard"):
-                ss.pop("income_editor", None)
+                reset_editor("income_editor")
                 st.rerun()
             row.caption(pending_text(updates, deleted))
 
@@ -618,7 +634,7 @@ def page_transactions():
             st.caption("Fix any wrong category and press Save corrections. The app will remember each merchant.")
             shown = review.set_index("id")[["date", "merchant", "amount", "confidence", "predicted_category"]].rename(
                 columns={"predicted_category": "category"})
-            st.data_editor(shown, key="review_editor", hide_index=True, disabled=["date", "merchant", "amount",
+            st.data_editor(shown, key=editor_key("review_editor"), hide_index=True, disabled=["date", "merchant", "amount",
                                                                                   "confidence"],
                            alt="Transactions the model was unsure about",
                            column_config={
@@ -629,12 +645,12 @@ def page_transactions():
                                                                              min_value=0, max_value=1),
                                "category": st.column_config.SelectboxColumn("Category", options=CATEGORIES,
                                                                             required=True)})
-            updates, _ = table_edits.editor_changes(shown, ss.get("review_editor"))
+            updates, _ = table_edits.editor_changes(shown, ss.get(editor_key("review_editor")))
             if st.button("Save corrections", type="primary", disabled=not updates):
                 for tid, row in updates.items():
                     db.update_categories(uid, [tid], row["category"])
                     learn(row["merchant"], row["category"])
-                ss.pop("review_editor", None)
+                reset_editor("review_editor")
                 st.rerun()
 
         with st.expander(f"Merchants I've learned from you ({len(rules)})"):

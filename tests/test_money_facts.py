@@ -83,6 +83,12 @@ class FactsTests(unittest.TestCase):
         self.assertEqual(mf.unverified_amounts("You could save $818.64 or $21.40, even $300.", refs),
                          ["$818.64", "$21.40"])
 
+    def test_dollars_never_become_maths(self):
+        import ui
+        text = ui.plain_dollars("Dining went from $398 in Jan to $1,855 in Aug. `$5` \\(x\\) $$9 \\text{total}")
+        self.assertEqual(text, "Dining went from \\$398 in Jan to \\$1,855 in Aug. \\$5 x \\$9 total")
+        self.assertEqual(ui.esc("$5 or \\$6"), "\\$5 or \\$6")
+
     def test_local_temperature(self):
         self.assertEqual(advisor.ADVICE_TEMPERATURE, 0.2)
         reply = mock.Mock(status_code=200)

@@ -111,6 +111,16 @@ class EditDBTests(DBTestCase):
         self.assertTrue(db.get_transactions(u).empty)
         self.assertEqual(db.get_budgets(u), {"Other": 50.0})
 
+    def test_only_new_skips_stored_rows(self):
+        u = self.make_user()
+        db.insert_transactions(u, txns([("2026-10-01 00:00:00", "ALDI", 30.0, "Groceries")]))
+        incoming = pd.DataFrame({"date": pd.to_datetime(["2026-10-01", "2026-10-01", "2026-10-02"]),
+                                 "merchant": ["aldi", "ALDI", "ALDI"], "amount": [30.0, 30.0, 30.0]})
+        new = db.only_new(u, incoming)
+        self.assertEqual(len(new), 2)                     # the second identical coffee is kept
+        self.assertEqual(list(new.index), [1, 2])
+        self.assertEqual(len(db.only_new(self.make_user("other"), incoming)), 3)
+
     def test_old_db_gets_income_table(self):
         conn = sqlite3.connect(db.DB_PATH)
         conn.execute("DROP TABLE income")

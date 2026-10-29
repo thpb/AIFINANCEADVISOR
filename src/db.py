@@ -4,6 +4,7 @@ init_db() is safe to run on every start and upgrades older databases in place.
 """
 import os
 import sqlite3
+from collections import Counter
 
 import pandas as pd
 
@@ -104,6 +105,26 @@ def insert_transactions(user_id, df, source="upload"):
     finally:
         conn.close()
     return len(rows)
+
+
+def _txn_key(date, merchant, amount):
+    return (pd.Timestamp(date).strftime("%Y-%m-%d"), str(merchant).strip().upper(), round(float(amount), 2))
+
+
+def only_new(user_id, df):
+    """Rows of df that aren't stored yet (same day, merchant and amount), so a re-imported CSV adds nothing.
+
+    Repeats still count: a file with two identical coffees adds the second one only if the database has one.
+    """
+    stored = get_transactions(user_id)
+    left = Counter(_txn_key(d, m, a) for d, m, a in zip(stored["date"], stored["merchant"], stored["amount"]))
+    keep = []
+    for d, m, a in zip(df["date"], df["merchant"], df["amount"]):
+        key = _txn_key(d, m, a)
+        keep.append(left[key] == 0)
+        if left[key]:
+            left[key] -= 1
+    return df[keep]
 
 
 def get_transactions(user_id):

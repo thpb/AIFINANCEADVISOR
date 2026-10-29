@@ -39,9 +39,6 @@ If resuming in a new session: read the spec and this file, then continue from th
 - Zip: `../expense-categorizer.zip`, built with `git archive` (tracked files only: no `data/` contents,
   `venv` or `__pycache__`).
 
-## Remaining
-
-- Hand-check editing and deleting a row in both editors (Spending, Income) in a browser.
 
 ## Test status
 
@@ -87,8 +84,8 @@ If resuming in a new session: read the spec and this file, then continue from th
 | # | Prompt | Status |
 |---|--------|--------|
 | 0 | CLAUDE.md project memory | Done |
-| 1 | Acceptance checklist, PASS/FAIL | Next |
-| 2 | More realistic training data | Not started |
+| 1 | Acceptance checklist, PASS/FAIL | Done |
+| 2 | More realistic training data | Next |
 | 3 | Check categories with the real model | Not started |
 | 4 | Test the advisor with real Ollama | Not started |
 | 5 | Safe demo account | Not started |
@@ -103,3 +100,25 @@ If resuming in a new session: read the spec and this file, then continue from th
   results of this generator. The generator also used `date.today()`, so even our own numbers moved daily.
   Added an optional `--end YYYY-MM-DD` to `generate_realistic_data.py` (default unchanged; verified
   byte-identical output for `--end 2026-10-29`). Reported results: 75.6% / 87.0% with `--end 2026-10-29`.
+
+## Prompt 1: acceptance checklist (29/10/2026)
+
+| # | Item | Result | How it was checked |
+|---|------|--------|--------------------|
+| 1 | Fresh Windows setup from README only | PASS | `git clone` to a scratch folder, new venv, `pip install -r requirements.txt`, generate, train, unit tests |
+| 2 | Baseline ~73%, v2 ~82% | FAIL vs reference | Measured 75.6% / 87.0% (reproducible with `--end 2026-10-29`). Not "fixed": changing the data to hit a target would be dishonest |
+| 3 | "spent 50 on groceries yesterday" | PASS | AppTest `test_sentence_hint_then_correction_learns_rule` + browser |
+| 4 | One correction fixes past and future rows | PASS | New AppTest `test_correction_fixes_past_and_future` |
+| 5 | Low-confidence rows in review, gone when corrected | PASS | Same AppTest: tab goes from (1) to (0) |
+| 6 | Budget warning at 80%, alert over 100%, right after saving | PASS | AppTests for 90% and over-budget toasts; unit tests for exact 80%/100% |
+| 7 | Forecast, what-if, savings match hand calc | PASS | Demo data: forecast $4,224 = 3951.44x31/29; Dining 20% = $78.88/month by hand and in app; October saved $848.56 both |
+| 8 | "got paid 2000 salary" is income, Saved stat updates | PASS | AppTest `test_income_sentence_and_saved_stat` |
+| 9 | Edit and delete in both editors, nothing saved until Save | PASS after fix | Browser: edited an amount and deleted a row (DB unchanged until Save, then saved). **Bug found and fixed**: Discard left the unsaved deletion showing in the grid. Editors now use versioned keys |
+| 10 | "$300" plan adds up exactly, max 30%, Bills out | PASS | Unit test (spec reference example) + demo data: total $300.00, max cut 9.8%, no Bills |
+| 11 | Invented amounts show the warning | PASS | AppTest with $818.64 + real Qwen flagged an invented $4,951.44 |
+| 12 | Dining chart in Dining's colour | PASS after earlier fix | Browser with real Qwen |
+| 13 | Model label, Local model box, Groq errors | PASS (Groq with a real key not tested: no key) | New AppTests: Local model box sends `llama3.2:3b`; Groq with no key shows the sidebar message; mocked Groq unit tests |
+| 14 | No $ as maths or code box | PASS | New unit test on "$398 in Jan to $1,855 in Aug" + browser |
+| 15 | Re-uploading a CSV adds nothing | PASS after fix | **Was only true within one browser session.** Now rows already stored are skipped (`db.only_new`). AppTest uploads the same file in two sessions |
+| 16 | Older app.db opens intact | PASS | Unit test builds an old-schema database |
+| 17 | All tests pass | PASS | 136 unit tests, 16 AppTests |
