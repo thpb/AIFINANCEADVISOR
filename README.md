@@ -82,7 +82,7 @@ python src/evaluate_models.py                                       # writes rep
 |------|----------|----|--------------------|
 | Original data, time split | 75.6% | 87.0% | 87.8% |
 | New data, time split | 86.5% | 85.6% | 87.4% |
-| New data, unseen merchants | 7.3% | 42.7% | 79.9% |
+| New data, unseen merchants | 7.3% | 42.7% | 80.2% |
 
 The data is synthetic, so accuracy on a real bank statement is likely to be lower.
 
