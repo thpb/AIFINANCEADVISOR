@@ -1,9 +1,9 @@
 """Keyword hints for plain words and Australian merchants.
 
 The model learned from US bank-style names ("TRADER JOE'S", "SHELL OIL"), so
-words typed into quick add ("coffee", "rent") and Australian shops it never saw
-("Coles", "Opal") are only guesses for it. This short, readable list fixes the
-obvious cases. Amazon, Costco and Target are deliberately NOT here: the model's
+words typed into quick add ("coffee", "rent"), Australian shops it never saw
+("Coles", "Opal") and Australian slang ("maccas", "rego") are only guesses for
+it. This short, readable list fixes the obvious cases. Amazon, Costco and Target are deliberately NOT here: the model's
 uncertainty about them is the honest answer.
 """
 import re
@@ -13,9 +13,9 @@ HINTS = {
                   "harris farm"],
     "Dining": ["coffee", "cafe", "lunch", "dinner", "breakfast", "brunch", "restaurant", "takeaway", "pizza",
                "burger", "sushi", "kebab", "uber eats", "menulog", "doordash", "mcdonalds", "mcdonald's",
-               "hungry jacks", "kfc", "guzman", "starbucks"],
+               "maccas", "brekkie", "hungry jacks", "kfc", "guzman", "starbucks"],
     "Transport": ["uber", "taxi", "didi", "bus", "train", "tram", "ferry", "opal", "myki", "petrol", "fuel",
-                  "parking", "toll", "linkt", "bp", "ampol", "shell"],
+                  "parking", "toll", "linkt", "bp", "ampol", "shell", "servo", "rego"],
     "Bills": ["rent", "electricity", "power bill", "gas bill", "water bill", "internet", "phone bill",
               "insurance", "telstra", "optus", "vodafone", "agl", "origin energy"],
     "Subscriptions": ["netflix", "spotify", "stan", "binge", "disney+", "disney plus", "youtube premium",
@@ -24,6 +24,7 @@ HINTS = {
                       "steam", "playstation", "xbox"],
     "Shopping": ["clothes", "shoes", "kmart", "big w", "jb hi-fi", "jb hifi", "officeworks", "bunnings", "myer",
                  "david jones", "uniqlo"],
+    "Other": ["doctor", "dentist", "chemist", "pharmacy", "haircut", "vet"],
 }
 
 HINT_CONFIDENCE = 0.95

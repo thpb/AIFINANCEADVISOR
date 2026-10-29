@@ -19,6 +19,13 @@ class HintTests(unittest.TestCase):
         for text, cat in cases.items():
             self.assertEqual(find_hint(text)[0], cat, text)
 
+    def test_australian_slang_and_health(self):
+        cases = {"maccas": "Dining", "brekkie": "Dining", "servo": "Transport", "rego": "Transport",
+                 "dentist": "Other", "chemist": "Other", "vet": "Other"}
+        for text, cat in cases.items():
+            self.assertEqual(find_hint(text)[0], cat, text)
+        self.assertEqual(find_hint("velvet cushion"), (None, ""))
+
     def test_longest_phrase_wins(self):
         self.assertEqual(find_hint("uber eats"), ("Dining", "uber eats"))
         self.assertEqual(find_hint("uber"), ("Transport", "uber"))

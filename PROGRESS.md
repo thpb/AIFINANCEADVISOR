@@ -86,8 +86,8 @@ If resuming in a new session: read the spec and this file, then continue from th
 | 0 | CLAUDE.md project memory | Done |
 | 1 | Acceptance checklist, PASS/FAIL | Done |
 | 2 | More realistic training data | Done |
-| 3 | Check categories with the real model | Next |
-| 4 | Test the advisor with real Ollama | Not started |
+| 3 | Check categories with the real model | Done |
+| 4 | Test the advisor with real Ollama | Next |
 | 5 | Safe demo account | Not started |
 | 6 | Nothing crashes during the live demo | Not started |
 | 7 | Report material | Not started |
@@ -137,3 +137,11 @@ If resuming in a new session: read the spec and this file, then continue from th
   `month` feature moved v2 by only 0.5 points, so the cause is that most test shops are already known.
 - 11 generator tests (`tests/test_generate_more_data.py`). 147 unit tests, 16 AppTests pass.
 - `check_categories.py` outputs: `data/check_categories_original.txt` and `data/check_categories_v2.txt`.
+
+## Prompt 3: check categories with the real model
+
+- All 16 demo sentences get the right final category with the v2-data model.
+- Extra Australian phrasing checked (30 sentences). Wrong or shaky: "rego" (Other, should be Transport),
+  "dentist" (Shopping 41%), "brekkie" (Dining 56%). Added hints: Dining "maccas", "brekkie"; Transport "servo",
+  "rego"; new Other list "doctor", "dentist", "chemist", "pharmacy", "haircut", "vet". Model settings unchanged.
+- Left to the model on purpose (genuinely debatable): pub, 7-Eleven, Dan Murphy's, and Amazon (by design).
