@@ -90,8 +90,8 @@ If resuming in a new session: read the spec and this file, then continue from th
 | 5 | Safe demo account | Done |
 | 6 | Nothing crashes during the live demo | Done |
 | 7 | Report material | Done |
-| 8 | HOW_IT_WORKS.md for Q&A | Next |
-| 9 | Final tidy-up, "Final submission" commit | Not started |
+| 8 | HOW_IT_WORKS.md for Q&A | Done |
+| 9 | Final tidy-up, "Final submission" commit | Next |
 
 ## Notes from the improvement prompts
 
@@ -209,3 +209,10 @@ embedding values; embeddings = 51% of splits), confidence right vs wrong, and tw
 **Honest finding**: v2 is over-confident on this data (86% average confidence when wrong); the 60% review line
 catches only 12% of its mistakes. The report says so and names calibration as a possible improvement.
 Hints raise unseen-merchant accuracy to 80.2% (was 79.9% before prompt 3's new hints).
+
+## Prompt 8: HOW_IT_WORKS.md
+
+Six plain-English sections with file and function references. While measuring context use for section 5,
+found and fixed a real bug: `_trim_history` assumed 4 characters per token (spec formula), but the number-heavy
+data summary is ~2 (Qwen counted 3,696 tokens for 7,560 characters). The old budget allowed ~12k tokens into
+an 8,192 window, so Ollama could silently drop the spending data. Now `CHARS_PER_TOKEN = 2`.
