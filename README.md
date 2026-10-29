@@ -150,8 +150,8 @@ If Groq retires a model, the app asks Groq which models exist and switches autom
 ## Tests
 
 ```powershell
-python -m unittest discover -s tests      # 162 unit tests, no network, no real model
-python -m unittest discover -s apptests   # 16 Streamlit AppTest flows (needs the trained model)
+python -m unittest discover -s tests      # 170 unit tests, no network, no real model
+python -m unittest discover -s apptests   # 23 Streamlit AppTest flows (needs the trained model)
 ```
 
 AppTest can't type into `st.data_editor`, so the edit/delete logic is covered by `tests/test_income_and_editing.py`. Check editing and deleting a row once by hand in a browser.

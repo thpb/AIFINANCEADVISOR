@@ -78,7 +78,8 @@ class AppFlowTests(unittest.TestCase):
         return " ".join(str(e.value) for e in getattr(self.at, kind))
 
     def htmls(self):
-        return " ".join(str(e.value) for e in self.at.get("html"))
+        import html
+        return html.unescape(" ".join(str(e.value) for e in self.at.get("html")))
 
     def test_every_page_renders(self):
         for page in ["Overview", "Plan ahead", "Transactions", "AI advisor"]:
@@ -229,6 +230,80 @@ class AppFlowTests(unittest.TestCase):
         again.file_uploader[0].upload("bank.csv", csv, "text/csv").run()
         self.assertEqual(len(db.get_transactions(self.uid)), before + 3)
         self.assertTrue(any("Skipped 3 already in your account" in str(t.value) for t in again.toast))
+
+    # ---- live-demo safety: each case shows a friendly message, never a crash ----
+
+    def test_empty_account_every_page(self):
+        uid = db.create_user("empty", "h", "s")
+        at = AppTest.from_file(APP, default_timeout=120)
+        at.session_state["user_id"] = uid
+        at.run()
+        for page in ["Overview", "Plan ahead", "Transactions", "AI advisor"]:
+            at.radio(key="page").set_value(page).run()
+            self.assertFalse(at.exception, (page, at.exception))
+        self.assertIn("Add some spending first", " ".join(str(i.value) for i in at.info))
+        at.radio(key="page").set_value("Overview").run()
+        self.assertIn("No spending yet", " ".join(str(i.value) for i in at.info))
+
+    def test_wrong_local_model_name(self):
+        self.go("AI advisor")
+        self.at.text_input(key="local_model").set_value("qwen9:nope").run()
+        missing = mock.Mock(status_code=404, text="model not found")
+        with mock.patch("advisor.requests.post", return_value=missing):
+            self.at.chat_input[0].set_value("Am I on track with my budgets?").run()
+            self.assertIn('The model "qwen9:nope" isn\'t installed', self.texts("error"))
+            self.quick_add("thirty bucks on a taxi")
+        self.assertIn('The model "qwen9:nope" isn\'t installed', self.texts("error"))
+        self.assertFalse(self.at.exception, self.at.exception)
+        self.at.text_input(key="local_model").set_value("qwen2.5:3b-instruct-q8_0").run()
+
+    def test_wrong_groq_key(self):
+        self.go("AI advisor")
+        self.at.radio(key="engine").set_value("Groq (free cloud)").run()
+        self.at.text_input(key="groq_key").set_value("gsk_wrong").run()
+        rejected = mock.Mock(status_code=401, text="")
+        with mock.patch("advisor.requests.post", return_value=rejected):
+            self.at.chat_input[0].set_value("Am I on track with my budgets?").run()
+        self.assertIn("Groq rejected the API key", self.texts("error"))
+        self.at.radio(key="engine").set_value("Local (Ollama)").run()
+
+    def test_bad_csv_files(self):
+        self.at.file_uploader[0].upload("wrong.csv", b"when,what\n05/10/2026,COLES\n", "text/csv").run()
+        self.assertIn("missing these columns", self.texts("error"))
+        self.at.file_uploader[0].upload("empty.csv", b"", "text/csv").run()
+        self.assertIn("That file is empty.", self.texts("error"))
+        self.at.file_uploader[0].upload("messy.csv", b"date,merchant,amount\n05/10/2026,BUNNINGS,45\n"
+                                                     b"soon,ALDI,5\n", "text/csv").run()
+        self.assertFalse(self.at.exception, self.at.exception)
+        self.assertTrue(any("Skipped 1 row with a missing or unreadable" in str(t.value) for t in self.at.toast))
+
+    def test_sentence_without_amount_and_model_down(self):
+        import requests
+        with mock.patch("advisor.requests.post", side_effect=requests.ConnectionError()):
+            self.quick_add("coffee yesterday")
+        self.assertIn("couldn't find an amount", self.texts("error"))
+        self.assertIn("isn't running", self.texts("error"))
+
+    def test_no_income_no_budgets_and_empty_month(self):
+        self.assertIn('Try "got paid 2000 salary"', self.htmls())                  # no income yet
+        self.assertIn("1 category is worth checking.", self.htmls())
+        self.assertIn("No budgets yet", self.texts("caption"))
+        old = (pd.Timestamp(date.today().replace(day=1)) - pd.DateOffset(months=6)).strftime("%Y-%m")
+        db.add_income(self.uid, f"{old}-15 00:00:00", "salary", 1000)               # a month with no spending
+        self.at.run()
+        self.at.selectbox(key="month").set_value(old).run()
+        self.assertFalse(self.at.exception, self.at.exception)
+        self.assertIn("You spent $0 in", self.htmls())
+        self.go("Plan ahead")
+        self.assertIn("is finished: you spent $0", self.htmls())
+
+    def test_very_large_amount(self):
+        self.quick_add("house deposit 999,999")
+        self.at.get_by_key("confirm_box").button[0].click().run()
+        self.assertFalse(self.at.exception, self.at.exception)
+        self.assertIn("$999,999", self.htmls())
+        self.quick_add("house 1,000,001")
+        self.assertIn("too large", self.texts("error"))
 
     def test_advisor_unreachable(self):
         import requests

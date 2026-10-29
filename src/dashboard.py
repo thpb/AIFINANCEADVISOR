@@ -26,6 +26,7 @@ import savings
 import table_edits
 import ui
 from budgets import money, month_label
+from clean_data import read_bank_csv
 
 st.set_page_config(page_title="Expense Categorizer", page_icon="💳", layout="wide")
 db.init_db()
@@ -124,18 +125,6 @@ def budget_toasts(category, when):
     statuses = [r for r in bud.budget_status(db.get_transactions(uid), budget_map, month) if r["category"] == category]
     for msg in bud.alert_messages(statuses):
         flash("⚠️", msg)
-
-
-def parse_user_dates(values):
-    """CSV dates: ISO (2026-10-05) or day-first (05/10/2026)."""
-    text = values.astype(str).str.strip()
-    iso = text.str.match(r"^\d{4}-\d{1,2}-\d{1,2}")
-    out = pd.Series(pd.NaT, index=text.index, dtype="datetime64[ns]")
-    if iso.any():
-        out[iso] = pd.to_datetime(text[iso], format="mixed")
-    if (~iso).any():
-        out[~iso] = pd.to_datetime(text[~iso], dayfirst=True, format="mixed")
-    return out
 
 
 def save_new(df, source):
@@ -240,7 +229,8 @@ if ss.pending:
             c1, c2, c3, c4 = st.columns(4)
             when = c1.date_input("Date", value=e["date"], format="DD/MM/YYYY")
             who = c2.text_input("Merchant" if kind == "Expense" else "From", value=e["merchant"])
-            amount = c3.number_input("Amount", value=float(e["amount"]), min_value=0.01, step=1.0, format="%.2f")
+            amount = c3.number_input("Amount", value=float(e["amount"]), min_value=0.01, max_value=float(nl_entry.MAX_AMOUNT),
+                                     step=1.0, format="%.2f")
             category = None
             if kind == "Expense":
                 cats = CATEGORIES if e["category"] in CATEGORIES else CATEGORIES + [e["category"]]
@@ -310,34 +300,29 @@ def page_overview():
                     st.caption(f"{up.name} is already imported.")
                 else:
                     try:
-                        raw = pd.read_csv(up)
-                        raw.columns = [c.strip().lower() for c in raw.columns]
-                        missing = {"date", "merchant", "amount"} - set(raw.columns)
-                        if missing:
-                            raise ValueError(f"The file is missing these columns: {', '.join(sorted(missing))}.")
-                        df = raw[["date", "merchant", "amount"]].dropna().copy()
-                        df["date"] = parse_user_dates(df["date"])
-                        df["amount"] = pd.to_numeric(df["amount"].astype(str).str.replace(r"[$,]", "", regex=True))
+                        df, unreadable = read_bank_csv(up)
+                    except ValueError as err:
+                        st.error(ui.esc(f"Couldn't import {up.name}. {err}"))
+                    else:
                         new = db.only_new(uid, df).reset_index(drop=True)   # re-uploads add nothing
                         skipped = len(df) - len(new)
                         n = 0
                         if len(new):
                             with st.spinner(f"Categorizing {len(new)} transactions..."):
                                 n = save_new(new, "upload")
-                    except Exception as err:
-                        st.error(ui.esc(f"Couldn't import that file: {err} Check that it has date, merchant and "
-                                        "amount columns."))
-                    else:
                         ss.imported_files.append(file_id)   # a rerun must not import it again
                         ss.history = None
                         note = f" Skipped {skipped} already in your account." if skipped else ""
+                        if unreadable:
+                            note += (f" Skipped {unreadable} row{'s' if unreadable != 1 else ''} with a missing or "
+                                     "unreadable date, merchant or amount.")
                         flash("📥", f"Imported and categorized {n} transactions from {up.name}.{note}")
                         st.rerun()
         with t_hand, st.form("by_hand", clear_on_submit=True):
             c1, c2, c3, c4 = st.columns(4)
             when = c1.date_input("Date", value=today, format="DD/MM/YYYY")
             who = c2.text_input("Merchant")
-            amount = c3.number_input("Amount", min_value=0.0, step=1.0, format="%.2f")
+            amount = c3.number_input("Amount", min_value=0.0, max_value=float(nl_entry.MAX_AMOUNT), step=1.0, format="%.2f")
             choice = c4.selectbox("Category", ["Let the app decide"] + CATEGORIES)
             if st.form_submit_button("Add expense", type="primary"):
                 if not who.strip() or amount <= 0:
@@ -357,7 +342,8 @@ def page_overview():
             c1, c2, c3 = st.columns(3)
             when = c1.date_input("Date", value=today, format="DD/MM/YYYY", key="inc_date")
             who = c2.text_input("From", placeholder="salary")
-            amount = c3.number_input("Amount", min_value=0.0, step=50.0, format="%.2f", key="inc_amount")
+            amount = c3.number_input("Amount", min_value=0.0, max_value=float(nl_entry.MAX_AMOUNT), step=50.0, format="%.2f",
+                                     key="inc_amount")
             if st.form_submit_button("Add income", type="primary"):
                 if amount <= 0:
                     st.error("Enter an amount above zero.")
@@ -395,7 +381,8 @@ def page_overview():
         notes.append(f"{len(alerts)} budget{'s' if len(alerts) != 1 else ''} need attention."
                      if alerts else "All budgets are on track.")
     if len(review):
-        notes.append(f"{len(review)} categories are worth checking.")
+        notes.append("1 category is worth checking." if len(review) == 1
+                     else f"{len(review)} categories are worth checking.")
     ui.hero(f"You spent {money(total)} in {month_label(month)}", " ".join(notes))
 
     s1, s2, s3, s4 = st.columns(4)
@@ -432,8 +419,9 @@ def page_overview():
             with st.form("budgets_form", border=False):
                 values = {}
                 for cat in CATEGORIES:
-                    values[cat] = st.number_input(cat, min_value=0.0, step=50.0, value=float(budget_map.get(cat, 0)),
-                                                  key=f"budget_{cat}", help="0 means no budget.")
+                    values[cat] = st.number_input(cat, min_value=0.0, max_value=float(nl_entry.MAX_AMOUNT), step=50.0,
+                                                  value=float(budget_map.get(cat, 0)), key=f"budget_{cat}",
+                                                  help="0 means no budget.")
                 if st.form_submit_button("Save budgets", type="primary"):
                     for cat, v in values.items():
                         if v > 0:

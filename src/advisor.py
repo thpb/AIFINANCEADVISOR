@@ -82,6 +82,10 @@ class AdvisorError(Exception):
     """A problem the user can fix; the message says how."""
 
 
+class AdvisorUnreachable(AdvisorError):
+    """The AI engine can't be reached at all (Ollama not running, no internet)."""
+
+
 def backend():
     return (os.environ.get("ADVISOR_BACKEND") or "ollama").strip().lower()
 
@@ -113,7 +117,7 @@ def ollama_chat(messages, temperature=ADVICE_TEMPERATURE, json_mode=False):
     try:
         r = requests.post(OLLAMA_URL, json=payload, timeout=300)
     except requests.RequestException:
-        raise AdvisorError("Can't reach Ollama on this computer.") from None
+        raise AdvisorUnreachable("Can't reach Ollama on this computer.") from None
     if r.status_code == 404:
         raise AdvisorError(f'The model "{model}" isn\'t installed. Run `ollama pull {model}` '
                            "or change the Local model box.")
@@ -172,7 +176,7 @@ def groq_chat(messages, **extra):
                 model = fallback
                 r = _groq_post(key, model, messages, extra)
     except requests.RequestException:
-        raise AdvisorError("Can't reach Groq. Check your internet connection.") from None
+        raise AdvisorUnreachable("Can't reach Groq. Check your internet connection.") from None
     if r.status_code != 200:
         raise _groq_error(r)
     _groq_models[key] = model

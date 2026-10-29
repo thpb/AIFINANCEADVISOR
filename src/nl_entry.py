@@ -185,6 +185,16 @@ def llm_extract(text):
     return advisor._call_llm_json(messages)
 
 
+def _no_amount_message(err):
+    """Why the AI couldn't help: not running at all, or a problem the user can fix (wrong model, missing key)."""
+    import advisor
+    if isinstance(err, advisor.AdvisorError) and not isinstance(err, advisor.AdvisorUnreachable):
+        return (f"I couldn't find an amount in that sentence, and the AI model couldn't help: {err} "
+                "Until then only simple phrasing works. " + EXAMPLE_HINT)
+    return ("I couldn't find an amount in that sentence. The local AI model isn't running, "
+            "so only simple phrasing works right now. " + EXAMPLE_HINT)
+
+
 def parse_entry(text, today=None, use_llm=True, llm_fn=None):
     text = (text or "").strip()
     if not text:
@@ -217,10 +227,9 @@ def parse_entry(text, today=None, use_llm=True, llm_fn=None):
             reply = (llm_fn or llm_extract)(text)
             if isinstance(reply, str):
                 reply = json.loads(reply)
-        except Exception:
+        except Exception as err:
             if amount is None:
-                raise ValueError("I couldn't find an amount in that sentence. The local AI model isn't running, "
-                                 "so only simple phrasing works right now. " + EXAMPLE_HINT) from None
+                raise ValueError(_no_amount_message(err)) from None
             raise ValueError("I couldn't tell what the money was spent on. " + EXAMPLE_HINT) from None
         method = "llm"
         llm_merchant = str(reply.get("merchant") or "").strip()

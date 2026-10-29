@@ -88,8 +88,8 @@ If resuming in a new session: read the spec and this file, then continue from th
 | 3 | Check categories with the real model | Done |
 | 4 | Test the advisor with real Ollama | Done |
 | 5 | Safe demo account | Done |
-| 6 | Nothing crashes during the live demo | Next |
-| 7 | Report material | Not started |
+| 6 | Nothing crashes during the live demo | Done |
+| 7 | Report material | Next |
 | 8 | HOW_IT_WORKS.md for Q&A | Not started |
 | 9 | Final tidy-up, "Final submission" commit | Not started |
 
@@ -171,3 +171,31 @@ swapped); the narrower notes make that much rarer but not impossible with a 3B m
 - Found: the 4,000-row training file is ~$28,000/month of spending (fine for training, absurd for one person).
   The demo keeps every fixed payment and a fixed 15% sample of everyday rows (~$7,300/month).
 - 6 tests in `tests/test_make_demo_account.py` (fake models, temp DB). README "Demo account" section.
+
+## Prompt 6: nothing crashes during the live demo
+
+| Case | Result | Test |
+|------|--------|------|
+| Ollama not running | Friendly error (advisor + quick add) | AppTests `test_advisor_unreachable`, `test_sentence_without_amount_and_model_down` |
+| Wrong local model name | **Fixed**: quick add used to say "isn't running"; now says the model isn't installed and how to pull it | `test_wrong_local_model_name`, unit `test_wrong_model_name_says_so` |
+| Wrong Groq key | "Groq rejected the API key..." | `test_wrong_groq_key` |
+| Groq with no key | "Add your Groq API key..." | `test_groq_without_key_explains` |
+| Empty account | Every page renders with an invitation to add data | `test_empty_account_every_page` |
+| CSV wrong/missing columns, empty file, bad rows | **Fixed**: bad rows used to fail the whole file with a pandas error; now skipped and counted, plain messages (`clean_data.read_bank_csv`) | `test_bad_csv_files` + 4 unit tests |
+| Sentence with no amount | Friendly error with an example | AppTest + unit tests |
+| No income / no budgets | "Add income" stat, "No budgets yet" caption, advisor says no budgets are set | `test_no_income_no_budgets_and_empty_month`, unit budget test |
+| Month with no spending | "You spent $0 in ..."; Plan ahead "finished: you spent $0" | same AppTest |
+| Very large amounts | Quick add capped at $1,000,000 (clear error); **fixed**: the hand-entry, income, confirm and budget boxes had no cap | `test_very_large_amount` |
+
+Also fixed: "1 categories are worth checking" -> "1 category is worth checking".
+New `advisor.AdvisorUnreachable` separates "can't reach the engine" from fixable errors.
+170 unit tests, 23 AppTests pass.
+
+### Check by hand (could not be tested automatically)
+- Groq with a real, valid key (no key here; all Groq paths are mocked).
+- Stopping the real Ollama service mid-demo (tested with a mocked connection error).
+- Your own bank's CSV: Australian banks often export without a header row or call the columns
+  "Description"/"Debit"/"Credit". The import needs `date, merchant, amount` headers; rename them first.
+- How the app looks on the presentation screen/projector, in light and dark mode.
+- Typing into the data editor grid (checked once by hand on 30/10/2026: edit, delete, Save, Discard all work).
+- The first advisor answer after starting Ollama takes 40-60 s; run `python src/advisor_check.py` to warm up.
