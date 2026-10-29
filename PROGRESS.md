@@ -91,7 +91,7 @@ If resuming in a new session: read the spec and this file, then continue from th
 | 6 | Nothing crashes during the live demo | Done |
 | 7 | Report material | Done |
 | 8 | HOW_IT_WORKS.md for Q&A | Done |
-| 9 | Final tidy-up, "Final submission" commit | Next |
+| 9 | Final tidy-up, "Final submission" commit | Done |
 
 ## Notes from the improvement prompts
 
@@ -216,3 +216,20 @@ Six plain-English sections with file and function references. While measuring co
 found and fixed a real bug: `_trim_history` assumed 4 characters per token (spec formula), but the number-heavy
 data summary is ~2 (Qwen counted 3,696 tokens for 7,560 characters). The old budget allowed ~12k tokens into
 an 8,192 window, so Ollama could silently drop the spending data. Now `CHARS_PER_TOKEN = 2`.
+
+## Prompt 9: final tidy-up
+
+- Unused code: an AST scan found one unused import (`re` in dashboard.py), removed. No unused functions.
+  `generate_sample_data.py` kept (the spec lists it as the older generator, kept for comparison).
+- Fresh clone on Windows: clone, new venv, `pip install -r requirements.txt`, the README run order
+  (both generators, train v2 on transactions_v2.csv, check_categories, make_demo_account), unit tests and
+  AppTests, all from the README alone.
+- Nothing private committed: only `data/.gitkeep` is tracked; no database, model, CSV or `.env` was ever
+  committed; no real API keys (tests use fake `gsk_test`/`gsk_wrong`); the only password in code is the
+  documented local test account demo / demo1234.
+- README: run order updated to the current model, links to HOW_IT_WORKS.md and report_results.md, honest
+  known limits, acknowledgements (two MIT repos as ideas only, no code copied, sugapriya-k not used, built
+  with help from Claude and Claude Code).
+- Final: 170 unit tests, 23 AppTests pass. Zip rebuilt: `../expense-categorizer.zip`.
+
+All improvement prompts (0-9) are done.

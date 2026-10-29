@@ -65,7 +65,7 @@ help (`llm_extract`). It may only fill in the amount, the merchant and the date 
 
 **Why dates are calculated by code:** a language model doesn't reliably know today's date, and it is bad
 at counting days ("last Friday" from a Thursday is 6 days back). One wrong date puts a purchase in the
-wrong month and changes every budget and total. Code is right every time and can be tested: about 35
+wrong month and changes every budget and total. Code is right every time and can be tested: 40
 tests cover the sentence reader (`tests/test_nl_entry.py`).
 
 Before anything is saved, a "Check this before it's saved" box shows what was read and why the category

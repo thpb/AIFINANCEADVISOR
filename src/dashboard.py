@@ -6,7 +6,6 @@ Code does the maths, the AI only explains.
 import _root  # noqa: F401
 
 import os
-import re
 from datetime import date
 
 import pandas as pd

@@ -21,8 +21,12 @@ Progress and decisions: `PROGRESS.md` (read it first when resuming; update it an
 ## Commands
 
 ```powershell
-python src/generate_realistic_data.py      # data/transactions.csv
-python src/train_improved_v2.py --data data/transactions_v2.csv   # the app's model (larger Australian data)
+python src/generate_realistic_data.py --end 2026-10-29             # data/transactions.csv (original results)
+python src/generate_more_data.py --end 2026-10-29                  # data/transactions_v2.csv
+python src/train_improved_v2.py --data data/transactions_v2.csv    # the app's model (larger Australian data)
+python src/evaluate_models.py                                      # report_results.md
+python src/make_demo_account.py                                    # demo / demo1234
+python src/advisor_check.py                                        # 5 advisor questions on the real model
 streamlit run src/dashboard.py
 ```
 

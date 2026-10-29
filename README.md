@@ -6,7 +6,9 @@ The rule for every design choice is **code does the maths, the AI only explains*
 
 - A machine learning model (sentence embeddings + LightGBM) categorizes each transaction and reports how sure it is.
 - Every total, average, budget, forecast, savings plan and chart number is calculated by Python code.
-- Language models are only used to (a) fill gaps when reading a typed sentence, (b) pick a chart from a fixed menu, and (c) give advice using numbers the app hands them. Every dollar amount the AI writes is checked against the real data.
+- Language models are only used to (a) fill gaps when reading a typed sentence, (b) pick a chart from a fixed menu, and (c) give advice using numbers the app hands them. Every dollar amount and percentage the AI writes is checked against the real data.
+
+More detail: [HOW_IT_WORKS.md](HOW_IT_WORKS.md) explains each part in plain English, and [report_results.md](report_results.md) has the model results.
 
 ## What it does
 
@@ -39,15 +41,25 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ## Run order
 
 ```powershell
-python src/generate_realistic_data.py   # writes data/transactions.csv (synthetic, deliberately messy)
-python src/train_baseline.py            # optional: TF-IDF + Logistic Regression, for comparison
-python src/train_improved.py            # optional: v1 LightGBM, for comparison
-python src/train_improved_v2.py         # the model the app uses (required)
-python src/diagnose_model.py            # optional: confusion matrix and mistakes, for the report
-python src/check_categories.py          # shows how the demo sentences get categorized
-python src/make_demo_account.py         # optional: demo account (demo / demo1234), see below
+python src/generate_realistic_data.py --end 2026-10-29             # original data (data/transactions.csv)
+python src/generate_more_data.py --end 2026-10-29                  # larger Australian data (transactions_v2.csv)
+python src/train_improved_v2.py --data data/transactions_v2.csv    # the model the app uses (required)
+python src/check_categories.py                                     # how the demo sentences get categorized
+python src/make_demo_account.py                                    # optional: demo account (demo / demo1234)
 streamlit run src/dashboard.py
 ```
+
+For the report (optional):
+
+```powershell
+python src/train_baseline.py              # TF-IDF + Logistic Regression on the original data
+python src/train_improved.py              # v1 LightGBM on the original data
+python src/train_improved_v2.py           # v2 on the original data (overwrites the app's model; retrain with --data after)
+python src/diagnose_model.py              # confusion matrix and mistakes for the saved model
+python src/evaluate_models.py             # all comparisons, written to report_results.md (doesn't touch the app's model)
+```
+
+`--end 2026-10-29` makes the data, and so the results below, reproducible. Without it the data ends today.
 
 The first run downloads the `all-MiniLM-L6-v2` embedding model (about 90 MB).
 
@@ -194,9 +206,11 @@ apptests/                    Streamlit AppTest flows through the real app
 
 ## Known limits
 
-- The model learned from US bank-style merchant names, so plain words and Australian shops rely on the keyword hints.
+- All training data is synthetic, so accuracy on a real bank statement is likely to be lower than reported.
+- The model is over-confident when it's wrong (86% average confidence on its mistakes), so the "Worth a second look" list catches only some mistakes. Keyword hints and your corrections do most of the fixing.
+- Shops it has never seen are its weak spot (42.7% on unseen merchants, 80.2% with keyword hints).
 - The forecast is a simple run-rate. It can't know about bills that haven't arrived yet.
-- A 3B local model sometimes writes a number it shouldn't. The app can't stop that, but it flags it under the answer.
+- A 3B local model sometimes writes a number it shouldn't. The app flags dollar amounts and percentages that don't come from your data, but it can't catch a real number used in the wrong place.
 - The sidebar AI engine settings apply to the whole running app, which suits one person on one computer.
 
 ## Acknowledgements
@@ -206,4 +220,6 @@ Ideas (no code) from two MIT-licensed projects:
 - [Spritan/expense_tracker](https://github.com/Spritan/expense_tracker): typed-sentence entry and income.
 - [nirban256/expense_tracker](https://github.com/nirban256/expense_tracker): category budgets.
 
-All code in this project is original. sugapriya-k/Final-Year-Project was reviewed but not used because it has no licence.
+No code was copied from these or any other repository. sugapriya-k/Final-Year-Project was reviewed but not used because it has no licence.
+
+This project was built with the help of Claude (Anthropic's AI assistant) and Claude Code, which wrote and tested code from my specification and design decisions. I reviewed, ran and checked the work, and made the decisions about what the app should do.
