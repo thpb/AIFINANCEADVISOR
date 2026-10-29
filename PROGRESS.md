@@ -14,18 +14,21 @@ If resuming in a new session: read the spec and this file, then continue from th
 | 5 | `nl_entry.py` + tests | Done |
 | 6 | `budgets.py`, `planning.py`, `savings.py`, `table_edits.py`, `money_facts.py` + tests | Done |
 | 7 | `advisor.py`, `advisor_charts.py` + tests (network mocked) | Done |
-| 8 | `ui.py` + `dashboard.py` | **In progress** |
-| 9 | AppTest scripts, manual browser pass | Not started |
+| 8 | `ui.py` + `dashboard.py` | Done |
+| 9 | AppTest scripts, manual browser pass | **In progress** |
 | 10 | README, final test run, zip | Not started |
 
-## Where phase 8 is
+## Where phase 9 is
 
-- `src/ui.py` and `src/dashboard.py` are fully written (all four pages, login, sidebar, quick add + confirm step).
-- Not yet run: next step is launching `streamlit run src/dashboard.py`, fixing any errors, then phase 9.
+- Done: `apptests/test_app.py` (10 AppTest flows: every page, login gate, sentence + hint caption, correction
+  learns a rule, income sentence + Saved stat, Expense/Income radio switch, budget toast after saving,
+  forecast page, advisor savings plan, advisor chart + number-check warning, Ollama unreachable). All pass.
+- Next: manual browser pass (light/dark, phone width, no clipped title, no garbled $, edit/delete in each editor).
 
 ## Test status
 
-`python -m unittest discover -s tests`: 133 tests, all passing (phases 3-7).
+`python -m unittest discover -s tests`: 133 tests, all passing.
+`python -m unittest discover -s apptests`: 10 AppTest flows, all passing (needs the trained model).
 
 ## Measured results (generated data, time-based 80/20 split, generated 2026-10-29)
 

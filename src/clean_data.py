@@ -17,7 +17,7 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["date"] = pd.to_datetime(df["date"], format="mixed", dayfirst=False)
     df["merchant_clean"] = df["merchant"].map(clean_merchant)
-    df["day_of_week"] = df["date"].dt.dayofweek
+    df["day_of_week"] = df["date"].dt.day_of_week
     df["day_of_month"] = df["date"].dt.day
     df["month"] = df["date"].dt.month
     counts = df.groupby(["merchant_clean", "amount"])["amount"].transform("size")
