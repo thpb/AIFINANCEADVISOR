@@ -75,6 +75,18 @@ def create_user(username, password_hash, salt):
     return new_id
 
 
+def delete_user(user_id):
+    """Remove a user and everything they own (used to rebuild the demo account)."""
+    conn = get_connection()
+    try:
+        with conn:
+            for table in ["transactions", "income", "budgets", "merchant_rules"]:
+                conn.execute(f"DELETE FROM {table} WHERE user_id = ?", (user_id,))
+            conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    finally:
+        conn.close()
+
+
 def get_user_by_username(username):
     rows = _query("SELECT id, username, password_hash, salt FROM users WHERE username = ?", (username,))
     if not rows:

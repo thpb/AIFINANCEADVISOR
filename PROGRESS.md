@@ -69,8 +69,7 @@ If resuming in a new session: read the spec and this file, then continue from th
   are both accepted.
 - The sidebar engine/model/key settings are written to `os.environ` (as the spec says), so they are
   process-wide. Fine for a local single-user app.
-- Added `src/seed_demo.py` (not in the spec): creates a local demo account (demo / demo123) loaded with the
-  generated data, a fortnightly salary and budgets, for the live demo.
+- The demo account script is now `src/make_demo_account.py` (demo / demo1234, prompt 5); `seed_demo.py` was removed.
 - Number check references = the data summary + every user message with its app note in the conversation
   (the spec said "the question with its app note"); otherwise follow-ups quoting an earlier plan get flagged.
 - `pick_visual` adds category names spelled out in the question when the model leaves `categories` empty.
@@ -88,8 +87,8 @@ If resuming in a new session: read the spec and this file, then continue from th
 | 2 | More realistic training data | Done |
 | 3 | Check categories with the real model | Done |
 | 4 | Test the advisor with real Ollama | Done |
-| 5 | Safe demo account | Next |
-| 6 | Nothing crashes during the live demo | Not started |
+| 5 | Safe demo account | Done |
+| 6 | Nothing crashes during the live demo | Next |
 | 7 | Report material | Not started |
 | 8 | HOW_IT_WORKS.md for Q&A | Not started |
 | 9 | Final tidy-up, "Final submission" commit | Not started |
@@ -163,3 +162,12 @@ Other fixes: the number check now also checks percentages (a run invented "-848%
 ("### Tips") are shown as bold text. 156 unit tests, 16 AppTests pass.
 Known limit: the number check can't catch a real number used in the wrong role (e.g. a "from" and "to"
 swapped); the narrower notes make that much rarer but not impossible with a 3B model.
+
+## Prompt 5: safe demo account
+
+- `src/make_demo_account.py`: demo / demo1234, real pipeline, `transactions_v2.csv` with fallback, dates shifted
+  so the data ends today, budgets for Groceries/Dining/Shopping/Transport (Dining ~90% this month), 6 months of
+  fortnightly salary sized for ~12% savings. Rerun deletes the old demo user first (`db.delete_user`).
+- Found: the 4,000-row training file is ~$28,000/month of spending (fine for training, absurd for one person).
+  The demo keeps every fixed payment and a fixed 15% sample of everyday rows (~$7,300/month).
+- 6 tests in `tests/test_make_demo_account.py` (fake models, temp DB). README "Demo account" section.

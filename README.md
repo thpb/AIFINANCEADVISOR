@@ -45,7 +45,7 @@ python src/train_improved.py            # optional: v1 LightGBM, for comparison
 python src/train_improved_v2.py         # the model the app uses (required)
 python src/diagnose_model.py            # optional: confusion matrix and mistakes, for the report
 python src/check_categories.py          # shows how the demo sentences get categorized
-python src/seed_demo.py                 # optional: demo account (demo / demo123) with data, income and budgets
+python src/make_demo_account.py         # optional: demo account (demo / demo1234), see below
 streamlit run src/dashboard.py
 ```
 
@@ -96,6 +96,24 @@ Copy-Item data\models_backup_original\*.joblib data\
 
 or retrain on the original data: `python src/train_improved_v2.py` (with no `--data`, it uses `data/transactions.csv`).
 
+## Demo account
+
+```powershell
+python src/make_demo_account.py
+```
+
+Then log in as **demo** with password **demo1234**. The script:
+
+- loads `data/transactions_v2.csv` (or `data/transactions.csv` if the larger file doesn't exist) through the real categorization pipeline (model, keyword hints, rules);
+- moves the dates forward so the data ends **today**, so "this month" always has spending on demo day;
+- keeps every rent, bill and subscription payment and 15% of the everyday spending, because the 4,000-row training file has far more spending than one person would;
+- sets budgets for Groceries, Dining, Shopping and Transport, with **Dining close to its limit this month** so the warnings show;
+- adds 6 months of fortnightly salary, sized so the demo person saves about 12%.
+
+It is safe to run again: it deletes the old demo account first, so nothing is duplicated. Run it on the morning of the demo so the dates line up with the day. The account exists only in `data/app.db` on your computer.
+
+Before presenting, `python src/advisor_check.py` asks the advisor five typical questions through the real local model and prints the answers, plans, charts and any number-check warnings. It also warms the model up.
+
 ## Using your own bank CSV
 
 Overview page, "More ways to add", "Import a CSV". The file needs `date, merchant, amount` columns. Dates can be day-first (`05/10/2026`) or ISO (`2026-10-05`). A `category` column is allowed but ignored, because the app categorizes every row itself. Importing the same file twice in one session does not add the rows again.
@@ -132,7 +150,7 @@ If Groq retires a model, the app asks Groq which models exist and switches autom
 ## Tests
 
 ```powershell
-python -m unittest discover -s tests      # 147 unit tests, no network, no real model
+python -m unittest discover -s tests      # 162 unit tests, no network, no real model
 python -m unittest discover -s apptests   # 16 Streamlit AppTest flows (needs the trained model)
 ```
 
@@ -166,7 +184,8 @@ src/
   money_facts.py             numbers for the advisor, savings-goal plans, the number check
   advisor.py                 Ollama/Groq calls, prompts, conversation memory
   advisor_charts.py          charts and tables the advisor can request, calculated by code
-  seed_demo.py               demo account for the live demo
+  make_demo_account.py       demo account (demo / demo1234) for the live demo
+  advisor_check.py           asks the advisor five questions through the real model, without the browser
   ui.py                      CSS, colours, chart functions, small HTML helpers
   dashboard.py               the Streamlit app
 tests/                       unit tests (fakes and mocks only)
