@@ -144,12 +144,14 @@ class ModelNameAndContextTests(unittest.TestCase):
         self.assertEqual(out[-1]["content"], "new")
 
     def test_trim_by_size(self):
-        head = [{"role": "system", "content": "S"}, {"role": "user", "content": "D" * 20000},
+        head = [{"role": "system", "content": "S"}, {"role": "user", "content": "D" * 7600},
                 {"role": "assistant", "content": "ok"}]
-        big = [{"role": "user", "content": "q" * 3000}, {"role": "assistant", "content": "a" * 3000}] * 3
+        big = [{"role": "user", "content": "q" * 1500}, {"role": "assistant", "content": "a" * 1500}] * 3
         out = advisor._trim_history(head + big + [{"role": "user", "content": "new"}])
-        self.assertEqual(out[1]["content"], "D" * 20000)
-        self.assertLessEqual(sum(len(m["content"]) for m in out), 8192 * 4 * 0.75)
+        self.assertEqual(out[1]["content"], "D" * 7600)
+        # Measured ~2 characters per token, and a quarter of the 8,192-token window is kept for the answer.
+        self.assertLessEqual(sum(len(m["content"]) for m in out), 8192 * 2 * 0.75)
+        self.assertEqual(len(out), 3 + 2 + 1)                     # only the newest pair still fits
         self.assertEqual(out[-1]["content"], "new")
 
 

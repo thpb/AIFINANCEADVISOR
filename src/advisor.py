@@ -24,6 +24,9 @@ DEFAULT_LOCAL_MODEL = "qwen2.5:3b-instruct-q8_0"
 LOCAL_CONTEXT = int(os.environ.get("OLLAMA_NUM_CTX") or 8192)
 ADVICE_TEMPERATURE = 0.2
 MAX_PAIRS = 12
+# Measured with Qwen 2.5: the number-heavy data summary is about 2 characters per token
+# (7,560 characters -> 3,696 tokens), not the usual 4 for plain English.
+CHARS_PER_TOKEN = 2
 GROQ_PREFERRED = ["llama-3.3-70b-versatile", "openai/gpt-oss-120b", "llama-3.1-70b-versatile",
                   "openai/gpt-oss-20b", "llama-3.1-8b-instant"]
 NOT_CHAT = ("whisper", "guard", "tts", "embed")
@@ -251,7 +254,7 @@ def _trim_history(messages):
     head, rest = messages[:3], messages[3:]
     keep = MAX_PAIRS * 2 + (len(rest) % 2)
     rest = rest[-keep:] if len(rest) > keep else rest
-    budget = LOCAL_CONTEXT * 4 * 0.75
+    budget = LOCAL_CONTEXT * CHARS_PER_TOKEN * 0.75      # leave a quarter of the window for the answer
     while len(rest) > 1 and _chars(head) + _chars(rest) > budget:
         rest = rest[2:]
     return head + rest
