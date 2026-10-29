@@ -692,22 +692,8 @@ def page_transactions():
 
 # ---------------------------------------------------------------- AI advisor
 
-GOAL_NOTE = ("Do not repeat the table or change any number. Give 2-3 practical, specific tips for spending less "
-             "in those categories this month.")
 TRY_ASKING = ["How can I save $200 this month?", "What changed most since last month?",
               "Am I on track with my budgets?", "Show my spending by category as a chart"]
-
-
-def advisor_context():
-    parts = []
-    if not spend.empty:
-        latest = spend["date"].max().strftime("%Y-%m")
-        parts.append(bud.describe_for_advisor(bud.budget_status(spend, budget_map, latest), latest))
-    parts.append(savings.describe_for_advisor(spend, income))
-    note = corrections.describe_uncertainty(spend)
-    if note:
-        parts.append(note)
-    return "\n\n".join(parts)
 
 
 def data_key():
@@ -751,25 +737,8 @@ def show_visual(spec):
 
 
 def handle(question, history):
-    note, info = "", {}
-    goal = money_facts.detect_goal(question)
-    if goal and not spend.empty:
-        plan = money_facts.savings_goal(spend, goal, today)
-        note = money_facts.describe_goal(plan) + "\n" + GOAL_NOTE
-        info["plan"] = plan
-    elif advisor_charts.wants_visual(question) and not spend.empty:
-        months = sorted(spend["date"].dt.strftime("%Y-%m").unique())
-        spec = advisor.pick_visual(question, CATEGORIES, months)
-        result = advisor_charts.build(spec, spend, income, budget_map) if spec else None
-        if result:
-            note = advisor_charts.chart_note(result)
-            info["visual"] = spec
-    answer, new_history = advisor.ask_advisor(question, history, note)
-    sent = question + (advisor.NOTE_MARK + note + "]" if note else "")
-    info["model"] = advisor.last_model()
-    # References: the data summary plus every question with its app note (earlier plans count too).
-    refs = [m["content"] for m in history if m["role"] == "user"] + [sent]
-    info["unverified"] = money_facts.unverified_amounts(answer, refs)
+    answer, new_history, info = advisor.answer_question(question, history, spend, income, budget_map,
+                                                        CATEGORIES, today)
     ss.answers[hash(answer)] = info
     return new_history
 
@@ -779,7 +748,7 @@ def page_advisor():
     st.caption("Ask about your spending. The app calculates every number; the AI only explains and gives tips.")
     key = data_key()
     if ss.history is None or ss.advisor_key != key:
-        ss.history = advisor.start_conversation(spend, advisor_context(), today=today)
+        ss.history = advisor.start_conversation(spend, advisor.app_context(spend, income, budget_map), today=today)
         ss.advisor_key = key
         ss.answers = {}
 
@@ -794,7 +763,7 @@ def page_advisor():
                 st.markdown(ui.plain_dollars(msg["content"].split(advisor.NOTE_MARK)[0]))
         else:
             with st.chat_message("assistant"):
-                st.markdown(ui.plain_dollars(msg["content"]))
+                st.markdown(ui.no_headings(ui.plain_dollars(msg["content"])))
                 info = ss.answers.get(hash(msg["content"]), {})
                 if info.get("plan"):
                     show_plan(info["plan"])

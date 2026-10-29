@@ -87,8 +87,8 @@ If resuming in a new session: read the spec and this file, then continue from th
 | 1 | Acceptance checklist, PASS/FAIL | Done |
 | 2 | More realistic training data | Done |
 | 3 | Check categories with the real model | Done |
-| 4 | Test the advisor with real Ollama | Next |
-| 5 | Safe demo account | Not started |
+| 4 | Test the advisor with real Ollama | Done |
+| 5 | Safe demo account | Next |
 | 6 | Nothing crashes during the live demo | Not started |
 | 7 | Report material | Not started |
 | 8 | HOW_IT_WORKS.md for Q&A | Not started |
@@ -145,3 +145,21 @@ If resuming in a new session: read the spec and this file, then continue from th
   "dentist" (Shopping 41%), "brekkie" (Dining 56%). Added hints: Dining "maccas", "brekkie"; Transport "servo",
   "rego"; new Other list "doctor", "dentist", "chemist", "pharmacy", "haircut", "vet". Model settings unchanged.
 - Left to the model on purpose (genuinely debatable): pub, 7-Eleven, Dan Murphy's, and Amazon (by design).
+
+## Prompt 4: advisor with the real qwen2.5:3b-instruct-q8_0
+
+New `src/advisor_check.py` asks the 5 questions through `advisor.answer_question` (the same code path the app
+now uses; moved out of `dashboard.py`). Outputs: `data/advisor_check_before.txt`, `data/advisor_check_after.txt`.
+
+| Question | Before | After |
+|----------|--------|-------|
+| Save $300 | Plan correct. A rerun mixed up the cut with the new spending ("reduce by $734") | Note gives one amount per category; 3/3 runs quote the cuts exactly |
+| What changed most | Wrong: said Transport (+$29.55); real answer Groceries (-$406.15). Changes were alphabetical | Changes sorted by code, "Biggest change" named; change questions get ONE comparison (this month so far vs last month); 3/3 correct |
+| Dining chart | Right chart, but the model subtracted months itself and got two wrong | Code adds a "Change" column; note forbids calculating; numbers correct |
+| Budgets | Called limits "averages", invented $915.52 and $1,100.22 | Deterministic route: app's budget table + month-end forecast, state words exact |
+| Top 5 purchases | Model restricted it to February 2026 | Code decides period/top N from the question's words; all months |
+
+Other fixes: the number check now also checks percentages (a run invented "-848%"); model headings
+("### Tips") are shown as bold text. 156 unit tests, 16 AppTests pass.
+Known limit: the number check can't catch a real number used in the wrong role (e.g. a "from" and "to"
+swapped); the narrower notes make that much rarer but not impossible with a 3B model.

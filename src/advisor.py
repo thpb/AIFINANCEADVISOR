@@ -5,10 +5,17 @@ app and handed over as text; money_facts.unverified_amounts checks the answer.
 """
 import json
 import os
+import re
+from datetime import date
 
 import requests
 
+import advisor_charts
+import budgets
+import corrections
 import money_facts
+import planning
+import savings
 from budgets import category_column, money, with_month
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
@@ -36,6 +43,19 @@ Rules:
 5. Keep it short: 2-5 sentences or a short bullet list. A small Markdown table is fine for numbers copied
    from the summary. No headings, no LaTeX, no code blocks. Write money like $150 or $1,250.50.
 You may refer back to earlier questions in this conversation."""
+
+GOAL_NOTE = ("Do not repeat the table or change any number. When you name a category, quote its \"spend ... less\" "
+             "amount exactly. Give 2-3 practical, specific tips for spending less in those categories this month.")
+
+BUDGET_RE = re.compile(r"\b(budgets?|on track|over budget|limits?)\b", re.I)
+BUDGET_NOTE = "Use each budget's state exactly as written in the table (on track, close to the limit, over budget)."
+CHANGE_RE = re.compile(r"\b(change|changed|changes|since last month|went up|went down|increased?|decreased?)\b",
+                       re.I)
+CHANGE_NOTE = ("Answer only from these lines; do not mix in numbers from other periods. Say which two months you are "
+               "comparing, copy the \"Biggest change\" line exactly, and mention at most two other categories, "
+               "copying their lines exactly. Never reverse the order of a line or write a percentage it doesn't show.")
+NO_BUDGETS_NOTE = ("The user has not set any budgets yet. Say so in one sentence and suggest setting them on the "
+                   "Overview page under \"Set or change budgets\". Do not invent budget amounts.")
 
 ADVICE_PROMPT = ("Give me 2-3 practical pieces of advice based on my data: categories that went up since last "
                  "month, my biggest categories, or subscriptions worth reviewing. For each, quote the app's "
@@ -244,16 +264,79 @@ def get_advice(history):
     return ask_advisor(ADVICE_PROMPT, history)
 
 
-def pick_visual(question, categories, months):
-    """Let the model fill a small chart request; code validates it. None on any failure."""
-    import advisor_charts
+def pick_visual(question, categories, months, today=None):
+    """Let the model pick the kind of chart; code validates it and fills in the details. None on any failure."""
     messages = [{"role": "system", "content": advisor_charts.router_prompt(categories, months)},
                 {"role": "user", "content": question}]
     try:
         spec = advisor_charts.validate_spec(_call_llm_json(messages), categories, months)
     except Exception:
         return None
-    if spec and not spec["categories"] and spec["kind"] in ("monthly_spending", "category_totals"):
-        # Small models often drop the filter; the question itself names the categories.
-        spec["categories"] = advisor_charts.mentioned_categories(question, categories)
-    return spec
+    if spec is None:
+        return None
+    return advisor_charts.apply_question(spec, question, categories, months, today or date.today())
+
+
+def app_context(spend, income, budget_map):
+    """Extra facts for the data message: budgets for the latest month, savings, and how sure the model was."""
+    parts = []
+    if not spend.empty:
+        latest = with_month(spend)["month"].max()
+        parts.append(budgets.describe_for_advisor(budgets.budget_status(spend, budget_map, latest), latest))
+    parts.append(savings.describe_for_advisor(spend, income))
+    note = corrections.describe_uncertainty(spend)
+    if note:
+        parts.append(note)
+    return "\n\n".join(parts)
+
+
+def budget_note(spend, income, budget_map, today):
+    """Budget questions are answered from the app's own budget table and forecast, never from the model's maths."""
+    if not budget_map:
+        return NO_BUDGETS_NOTE, {}
+    month = today.strftime("%Y-%m")
+    spec = advisor_charts.validate_spec({"kind": "budget_status", "month": month}, [], [month])
+    result = advisor_charts.build(spec, spend, income, budget_map)
+    if result is None:
+        return NO_BUDGETS_NOTE, {}
+    note = advisor_charts.chart_note(result) + "\n" + BUDGET_NOTE
+    fc = planning.forecast_month(spend, month, today, budget_map)
+    if not fc["too_early"]:
+        messages = planning.forecast_messages(fc)
+        note += "\nMonth-end forecast (calculated by the app): " + (
+            " ".join(messages) if messages else "no budget is on pace to go over by month end.")
+    return note, {"visual": spec}
+
+
+def answer_question(question, history, spend, income, budget_map, categories, today):
+    """One question end to end: code prepares a savings plan or a chart, the model explains, code checks numbers.
+
+    Returns (answer, new_history, info). info may hold "plan", "visual" (a chart spec), "model" and
+    "unverified" (dollar amounts in the answer that match nothing the app gave the model).
+    """
+    note, info = "", {}
+    goal = money_facts.detect_goal(question)
+    if goal and not spend.empty:
+        plan = money_facts.savings_goal(spend, goal, today)
+        note = money_facts.describe_goal(plan) + "\n" + GOAL_NOTE
+        info["plan"] = plan
+    elif BUDGET_RE.search(question) and not spend.empty:
+        note, info = budget_note(spend, income, budget_map, today)
+    elif advisor_charts.wants_visual(question) and not spend.empty:
+        months = sorted(with_month(spend)["month"].unique())
+        spec = pick_visual(question, categories, months, today)
+        result = advisor_charts.build(spec, spend, income, budget_map) if spec else None
+        if result:
+            note = advisor_charts.chart_note(result)
+            info["visual"] = spec
+    elif CHANGE_RE.search(question) and not spend.empty:
+        change = money_facts.recent_change(spend, today)
+        if change:
+            note = change + "\n" + CHANGE_NOTE
+    answer, new_history = ask_advisor(question, history, note)
+    sent = question + (NOTE_MARK + note + "]" if note else "")
+    info["model"] = last_model()
+    # References: the data summary plus every question with its app note (earlier plans count too).
+    refs = [m["content"] for m in history if m["role"] == "user"] + [sent]
+    info["unverified"] = money_facts.unverified_amounts(answer, refs)
+    return answer, new_history, info

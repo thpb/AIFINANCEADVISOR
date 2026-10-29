@@ -3,6 +3,7 @@
 The AI never draws or calculates. It only fills a small JSON request; this code
 validates it, calculates the numbers with pandas and the app draws them.
 """
+import calendar
 import re
 
 import pandas as pd
@@ -28,6 +29,42 @@ TABLE_ONLY = {"top_purchases", "budget_status"}
 
 def wants_visual(question):
     return bool(VISUAL_RE.search(question or ""))
+
+
+MONTH_NUMBERS = {name.lower(): i for i, name in enumerate(calendar.month_name) if name}
+
+
+def question_month(question, months, today):
+    """The one month a question names ("this month", "last month", "in September"), else None."""
+    q = (question or "").lower()
+    current = today.strftime("%Y-%m")
+    if re.search(r"\bthis month\b", q):
+        return current if current in months else None
+    if re.search(r"\blast month\b", q):
+        prev = (pd.Period(current, freq="M") - 1).strftime("%Y-%m")
+        return prev if prev in months else None
+    for name, number in MONTH_NUMBERS.items():
+        pattern = r"\b(in|for|during|of)\s+may\b" if name == "may" else rf"\b{name}\b"
+        if re.search(pattern, q):
+            year = re.search(r"\b(20\d\d)\b", q)
+            hits = [m for m in months if int(m[5:]) == number and (not year or m.startswith(year[1]))]
+            return hits[-1] if hits else None
+    return None
+
+
+def apply_question(spec, question, categories, months, today):
+    """Code, not the model, decides the period, "top N" and named categories from the question's own words."""
+    spec = dict(spec)
+    spec["month"] = question_month(question, months, today)
+    n_months = re.search(r"\b(?:last|past)\s+(\d+)\s+months?\b", question or "", re.I)
+    spec["months"] = min(max(int(n_months[1]), 1), 24) if n_months else 24
+    top = re.search(r"\btop\s+(\d+)\b", question or "", re.I)
+    if top:
+        spec["limit"] = min(max(int(top[1]), 3), 20)
+    if not spec["categories"] and spec["kind"] in ("monthly_spending", "category_totals"):
+        # Small models often drop the filter; the question itself names the categories.
+        spec["categories"] = mentioned_categories(question, categories)
+    return spec
 
 
 def mentioned_categories(question, categories):
@@ -127,7 +164,11 @@ def build(spec, spend, income, budgets):
         table = g.pivot_table(index="month", columns="category", values="amount", aggfunc="sum", fill_value=0)
         if len(table.columns) > 1:
             table["Total"] = table.sum(axis=1)
-        out["table"] = table.round(2).rename_axis(None, axis=1).rename_axis("Month").reset_index()
+        table = table.round(2)
+        # Month-to-month change of the last column, so the model never has to subtract.
+        diffs = table.iloc[:, -1].diff().round(2)
+        table["Change"] = ["" if pd.isna(v) else ("+" if v >= 0 else "") + money(v) for v in diffs]
+        out["table"] = table.rename_axis(None, axis=1).rename_axis("Month").reset_index()
 
     elif kind == "income_vs_spending":
         if rows.empty:
@@ -185,4 +226,5 @@ def chart_note(result):
     spec = result["spec"]
     return (f"The app is showing the user a {spec['format']} titled '{result['title']}' right under your answer. "
             f"Its exact numbers:\n{result['text']}\nPoint out what stands out in 2-4 sentences, quoting these "
-            "numbers exactly. Do not draw the table or chart yourself.")
+            "numbers exactly. Never calculate a difference, total or average yourself: use only numbers shown "
+            "here. Do not draw the table or chart yourself.")

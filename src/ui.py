@@ -84,6 +84,11 @@ def plain_dollars(text):
     return text.replace("\\$", "$").replace("$", "\\$")
 
 
+def no_headings(text):
+    """The prompt says no headings, but small models still write '### Tips'. Show them as bold text instead."""
+    return re.sub(r"^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$", r"**\1**", text, flags=re.M)
+
+
 # ---------- HTML helpers (st.html: no markdown, so $ is safe) ----------
 
 def app_title():

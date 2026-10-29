@@ -1,5 +1,6 @@
 import os
 import unittest
+from datetime import date
 from unittest import mock
 
 import pandas as pd
@@ -79,6 +80,28 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(list(r["chart_df"]["amount"]), [25.0, 20.0])
         self.assertEqual(set(r["chart_df"]["category"]), {"Dining"})
         self.assertEqual(list(r["chart_df"]["month_str"]), ["Sep 2026", "Oct 2026"])
+        self.assertEqual(list(r["table"]["Change"]), ["", "-$5"])       # calculated by code, not the model
+        self.assertIn("-$5", r["text"])
+        self.assertIn("Never calculate a difference", ac.chart_note(r))
+
+    def test_budget_question_uses_app_table(self):
+        budgets = {"Shopping": 250, "Dining": 100}
+        history = [{"role": "system", "content": "s"}, {"role": "user", "content": "d"},
+                   {"role": "assistant", "content": "ok"}]
+        reply = mock.Mock(status_code=200)
+        reply.json.return_value = {"message": {"content": "Shopping is over budget."}}
+        with mock.patch.dict(os.environ, {"ADVISOR_BACKEND": "ollama"}), \
+                mock.patch("advisor.requests.post", return_value=reply) as post:
+            _, _, info = advisor.answer_question("Am I on track with my budgets?", history, self.spend,
+                                                 self.income, budgets, CATS, date(2026, 10, 29))
+            sent = post.call_args.kwargs["json"]["messages"][-1]["content"]
+            self.assertEqual(post.call_count, 1)                           # no model call to pick a chart
+            self.assertEqual(info["visual"]["kind"], "budget_status")
+            self.assertIn("over budget", sent)
+            self.assertIn("Month-end forecast (calculated by the app)", sent)
+            advisor.answer_question("Am I on track with my budgets?", history, self.spend, self.income, {},
+                                    CATS, date(2026, 10, 29))
+            self.assertIn("has not set any budgets", post.call_args.kwargs["json"]["messages"][-1]["content"])
 
     def test_income_vs_spending(self):
         r = ac.build(self.spec(kind="income_vs_spending"), self.spend, self.income, {})
@@ -126,6 +149,26 @@ class BuildTests(unittest.TestCase):
             self.assertIsNone(advisor.pick_visual("chart", CATS, MONTHS))
         with mock.patch("advisor._call_llm_json", return_value={"kind": "category_totals"}):
             self.assertEqual(advisor.pick_visual("chart", CATS, MONTHS)["kind"], "category_totals")
+
+    def test_question_month(self):
+        months = ["2025-09", "2026-08", "2026-09", "2026-10"]
+        today = date(2026, 10, 29)
+        self.assertEqual(ac.question_month("spending this month", months, today), "2026-10")
+        self.assertEqual(ac.question_month("what about last month?", months, today), "2026-09")
+        self.assertEqual(ac.question_month("top purchases in September", months, today), "2026-09")
+        self.assertEqual(ac.question_month("september 2025 by category", months, today), "2025-09")
+        self.assertIsNone(ac.question_month("may I see a chart", months, today))
+        self.assertIsNone(ac.question_month("top 5 purchases", months, today))
+
+    def test_code_decides_period_and_top_n(self):
+        # The model invented a month and a period the question never asked for.
+        raw = {"kind": "top_purchases", "month": "2026-09", "months": 8, "limit": 10}
+        with mock.patch("advisor._call_llm_json", return_value=raw):
+            spec = advisor.pick_visual("Give me a table of my top 5 purchases", CATS, MONTHS, date(2026, 10, 29))
+        self.assertEqual((spec["month"], spec["months"], spec["limit"]), (None, 24, 5))
+        with mock.patch("advisor._call_llm_json", return_value={"kind": "monthly_spending"}):
+            spec = advisor.pick_visual("dining over the last 3 months", CATS, MONTHS, date(2026, 10, 29))
+        self.assertEqual(spec["months"], 3)
 
     def test_named_category_added_when_model_drops_it(self):
         with mock.patch("advisor._call_llm_json", return_value={"kind": "monthly_spending"}):
