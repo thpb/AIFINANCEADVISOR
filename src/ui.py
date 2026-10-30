@@ -15,27 +15,156 @@ FALLBACK = "#8a8a85"
 STATUS = {"ok": ("#0ca30c", "✓"), "warning": ("#fab219", "!"), "over": ("#d03b3b", "✕")}
 PLOT_CONFIG = {"displayModeBar": False, "scrollZoom": False}
 
+# Option C colours. The category palette and budget status colours above stay as they are (colour-blind safe).
+DARK = "#13261F"
+AMBER = "#E3A33C"
+MUTED = "#4F5B55"
+CREAM = "#F5F3EC"
+LINE = "#DDE3DA"
+FONT = "'IBM Plex Sans', sans-serif"
+HEADING_FONT = "'Space Grotesk', 'IBM Plex Sans', sans-serif"
+
 CSS = """
 <style>
-.block-container {max-width:1180px; padding-top:4rem; padding-bottom:6rem}
-.st-key-quickadd input {font-size:1.1rem; padding:0.7rem 0.8rem}
-.app-title {font-size:0.95rem; font-weight:600; letter-spacing:0.02em; opacity:0.75; margin-bottom:0.4rem}
-.hero {font-size:2.1rem; font-weight:650; line-height:1.2; font-variant-numeric:tabular-nums; margin:0.2rem 0 0.4rem}
-.hero-note {font-size:1rem; opacity:0.8; margin-bottom:1.2rem; line-height:1.5}
-.stat {padding:0.2rem 0}
-.stat-label {font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; opacity:0.65}
-.stat-value {font-size:1.45rem; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.3}
-.stat-note {font-size:0.85rem; opacity:0.7}
-.budget-row {margin:0.2rem 0 1rem}
+/* ---- page frame: no sidebar or Streamlit header, content 1180px wide ---- */
+header[data-testid="stHeader"], [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"] {display:none !important}
+.block-container, [data-testid="stMainBlockContainer"] {max-width:1340px; padding-top:0 !important; padding-bottom:5rem}
+h1, h2, h3, .tile-title, .hero-big {font-family:'Space Grotesk', 'IBM Plex Sans', sans-serif; letter-spacing:-0.01em}
+
+/* full-width coloured bands behind normal-width content */
+.st-key-topbar, .st-key-hero {background:#13261F; box-shadow:0 0 0 100vmax #13261F; clip-path:inset(0 -100vmax)}
+.st-key-hero {clip-path:inset(-1.2rem -100vmax 0 -100vmax); padding:1.4rem 0 2rem; margin-bottom:0.6rem}
+.st-key-strip {background:#E8EDE6; box-shadow:0 0 0 100vmax #E8EDE6; clip-path:inset(0 -100vmax);
+  padding:0.35rem 0; border-bottom:1px solid #DDE3DA; margin-top:-1rem; margin-bottom:0.6rem}
+
+/* ---- top bar ---- */
+.st-key-topbar {padding:0.75rem 0}
+.brand {display:flex; align-items:center; gap:10px; color:#F5F3EC; font-family:'Space Grotesk', sans-serif;
+  font-weight:700; font-size:19px; white-space:nowrap}
+.brand-logo {width:30px; height:30px; border-radius:7px; background:#F5F3EC; display:flex; align-items:flex-end;
+  justify-content:center; gap:3px; padding:0 0 7px}
+.brand-logo i {display:block; width:4px; border-radius:1px}
+.st-key-nav [data-testid="stButtonGroup"] > div {gap:4px; flex-wrap:wrap}
+.st-key-nav button {background:transparent !important; border:none !important; box-shadow:none !important;
+  border-radius:999px !important; padding:0.35rem 0.95rem !important; min-height:2.3rem}
+.st-key-nav button p {color:#E8EDE6; font-size:15px; font-weight:500}
+.st-key-nav button:hover p {color:#FFFFFF}
+.st-key-nav button[aria-checked="true"] {background:#E3A33C !important}
+.st-key-nav button[aria-checked="true"] p {color:#13261F !important; font-weight:600}
+/* the quick-add box takes the free space in the bar (its flex wrapper is the element without the key) */
+.st-key-topbar > div:has(.st-key-quickadd) {flex:1 1 260px !important; min-width:220px; max-width:480px;
+  margin-left:auto}
+.st-key-quickadd {width:100% !important}
+.st-key-quickadd [data-testid="stForm"] {padding:0}
+.st-key-quickadd [data-testid="stTextInputRootElement"] {background:#1C3229 !important;
+  border:1px solid #2E4A3E !important; border-radius:12px}
+.st-key-quickadd input {color:#F5F3EC !important; -webkit-text-fill-color:#F5F3EC; font-size:15px}
+.st-key-quickadd input::placeholder {color:#9FB0A7; -webkit-text-fill-color:#9FB0A7}
+.st-key-quickadd button, [class*="st-key-amber_"] button {background:#E3A33C !important; border:none !important;
+  border-radius:10px !important}
+.st-key-quickadd button p, [class*="st-key-amber_"] button p {color:#13261F !important; font-weight:600}
+.st-key-settings button {background:transparent !important; border:1px solid #3A5248 !important; border-radius:999px !important}
+.st-key-settings button p, .st-key-settings button span {color:#E8EDE6 !important}
+
+/* ---- Overview hero band ---- */
+.hero-month {color:#C9D3CC; font-size:15px; margin-bottom:2px}
+.hero-big {font-size:44px; font-weight:700; color:#F5F3EC; line-height:1.1; font-variant-numeric:tabular-nums}
+.hero-big .amber {color:#E3A33C}
+.hero-notes {color:#AEBBB3; font-size:14px; margin-top:10px; line-height:1.5; max-width:640px}
+.progress-top {display:flex; justify-content:space-between; gap:12px; color:#D5DDD8; font-size:13px}
+.progress {position:relative; height:12px; background:#2E4A3E; border-radius:999px; margin:8px 0 10px}
+.progress .fill {height:100%; background:#E3A33C; border-radius:999px}
+.progress .today {position:absolute; top:-5px; width:2px; height:22px; background:#FFFFFF; border-radius:1px}
+.progress-note {color:#D5DDD8; font-size:13px; line-height:1.45}
+.st-key-hero label p {color:#C9D3CC !important}
+.st-key-hero [data-testid="stSelectbox"] [role="group"] {background:#1C3229 !important; border:1px solid #2E4A3E}
+.st-key-hero [data-testid="stSelectbox"] input {color:#F5F3EC !important; -webkit-text-fill-color:#F5F3EC}
+.st-key-hero [data-testid="stSelectbox"] svg {fill:#F5F3EC; color:#F5F3EC}
+.st-key-hero [data-testid="stSelectbox"] {max-width:240px; margin-left:auto}
+
+/* ---- bento tiles ---- */
+[class*="st-key-tile_"] {background:#FFFFFF; border:1px solid #DDE3DA; border-radius:18px; padding:20px 22px 18px}
+.st-key-tile_pace {background:#E3A33C; border-color:#E3A33C}
+.st-key-tile_ask {background:#13261F; border-color:#13261F}
+.st-key-tile_ask p, .st-key-tile_ask div {color:#E8EDE6}
+.tile-head {display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.tile-title {font-size:20px; font-weight:600; color:#13261F}
+.tile-side {color:#4F5B55; font-size:13px}
+.tile-label {font-size:14px; font-weight:600; color:#13261F}
+.pace-big {font-family:'Space Grotesk', sans-serif; font-size:44px; font-weight:700; color:#13261F; line-height:1.1;
+  margin:14px 0 12px; font-variant-numeric:tabular-nums}
+.pace-text {font-size:14px; line-height:1.5; color:#13261F}
+.ask-label {color:#E3A33C !important; font-size:14px; font-weight:600}
+.ask-quote {font-family:'Space Grotesk', sans-serif; font-size:21px; font-weight:700; color:#FFFFFF !important;
+  line-height:1.3; margin:14px 0 12px}
+.ask-text {font-size:14px; line-height:1.5; color:#C9D3CC !important}
+[class*="st-key-link_"] button {background:transparent !important; border:none !important; padding:0 !important;
+  min-height:0 !important}
+[class*="st-key-link_"] button p {color:#1F5C45; font-weight:600; text-decoration:underline; text-underline-offset:3px}
+.st-key-tile_pace [class*="st-key-link_"] button p {color:#13261F}
+.recent {width:100%; border-collapse:collapse; font-size:14px; margin-top:8px}
+.recent td {padding:10px 4px; border-bottom:1px solid #E8EDE6; vertical-align:middle; white-space:nowrap}
+.recent tr:last-child td {border-bottom:none}
+.recent .d {color:#4F5B55; white-space:nowrap; width:62px}
+.recent .m {font-weight:600; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.recent .a {text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums}
+.dot {display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:0}
+.badge {display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px; background:#FCEFD6;
+  color:#6B4A0E; font-size:12px}
+.budget-row {padding:12px 0; border-bottom:1px solid #E8EDE6}
+.budget-row:last-of-type {border-bottom:none}
 .budget-top {display:flex; justify-content:space-between; gap:1rem; font-variant-numeric:tabular-nums}
 .budget-name {font-weight:600}
-.budget-bar {height:8px; border-radius:4px; background:rgba(128,128,128,0.18); margin:0.35rem 0; overflow:hidden}
+.budget-bar {height:8px; border-radius:4px; background:#E3E7E1; margin:0.4rem 0; overflow:hidden}
 .budget-fill {height:100%; border-radius:4px}
-.budget-state {font-size:0.85rem}
+.budget-state {font-size:13px; color:#4F5B55}
+
+/* ---- quick add confirm step ---- */
+.st-key-confirm_box {background:#FFFFFF; border-left:4px solid #E3A33C !important; border-radius:14px}
+
+/* ---- older page headers (Plan ahead) ---- */
+.hero {font-family:'Space Grotesk', sans-serif; font-size:2.1rem; font-weight:700; line-height:1.2;
+  font-variant-numeric:tabular-nums; margin:0.2rem 0 0.4rem}
+.hero-note {font-size:1rem; color:#4F5B55; margin-bottom:1.2rem; line-height:1.5}
+
+/* ---- AI advisor ---- */
+.strip {display:flex; flex-wrap:wrap; gap:6px 18px; font-size:14px; color:#4F5B55; align-items:center}
+.strip b {color:#13261F}
+.st-key-strip button p {color:#1F5C45 !important; font-weight:600; text-decoration:underline; text-underline-offset:3px}
+.st-key-strip button {background:transparent !important; border:none !important; padding:0 4px !important;
+  min-height:0 !important}
+.st-key-chat {max-width:860px; margin:0.4rem auto 0; width:100%}
+.st-key-chat [data-testid="stMarkdownContainer"] p, .st-key-chat li {font-size:16px; line-height:1.7}
+.user-row {display:flex; justify-content:flex-end}
+.user-bubble {background:#13261F; color:#F5F3EC; border-radius:14px; padding:10px 18px; max-width:80%;
+  font-weight:500; font-size:16px; line-height:1.5}
+.plan-grid {display:grid; grid-template-columns:repeat(auto-fill, minmax(165px, 1fr)); gap:12px; margin:4px 0}
+.plan-tile {background:#FFFFFF; border:1px solid #DDE3DA; border-radius:14px; padding:14px 18px}
+.plan-cat {font-size:13px; color:#4F5B55}
+.plan-cut {font-family:'Space Grotesk', sans-serif; font-size:24px; font-weight:700; margin:4px 0 8px;
+  font-variant-numeric:tabular-nums}
+.plan-bar {height:6px; border-radius:3px; background:#E3E7E1; overflow:hidden}
+.plan-bar div {height:100%; border-radius:3px}
+.plan-total {font-size:14px; margin-top:4px}
+.plan-total .ok {color:#1F5C45; font-weight:600; margin-right:14px}
+.plan-total .muted {color:#4F5B55}
+.st-key-suggest button {border-radius:999px !important; background:#FFFFFF !important; border:1px solid #CBD3CC !important}
+.st-key-suggest button p {font-weight:500}
+[data-testid="stChatInput"], [data-testid="stChatInput"] > div, [data-testid="stChatInput"] textarea {
+  background:#FFFFFF !important}
+[data-testid="stChatInput"] {border:2px solid #13261F !important; border-radius:14px !important}
+[data-testid="stChatInputSubmitButton"] {background:#E3A33C !important; border-radius:10px !important}
+[data-testid="stChatInputSubmitButton"] svg {fill:#13261F !important; color:#13261F !important}
+
 @media (max-width:640px) {
-  .block-container {padding-left:1rem; padding-right:1rem; padding-top:3.5rem}
+  .block-container, [data-testid="stMainBlockContainer"] {padding-left:1rem; padding-right:1rem}
+  .hero-big {font-size:32px}
   .hero {font-size:1.6rem}
-  .stat-value {font-size:1.2rem}
+  .pace-big {font-size:36px}
+  .brand {font-size:17px}
+  .recent .m {max-width:110px}
+  [class*="st-key-tile_"] {padding:16px 16px 14px}
 }
 </style>
 """
@@ -57,7 +186,7 @@ def page_bg():
 
 
 def ink():
-    return "#e8e8e3" if is_dark() else "#3d3d3a"
+    return "#e8e8e3" if is_dark() else DARK
 
 
 def category_color(category):
@@ -91,8 +220,10 @@ def no_headings(text):
 
 # ---------- HTML helpers (st.html: no markdown, so $ is safe) ----------
 
-def app_title():
-    st.html('<div class="app-title">💳 Expense Categorizer</div>')
+def brand():
+    """Small logo (three bars) and the app name for the top bar."""
+    bars = "".join(f'<i style="height:{h}px;background:{c}"></i>' for h, c in [(8, AMBER), (14, DARK), (10, AMBER)])
+    st.html(f'<div class="brand"><span class="brand-logo">{bars}</span>Expense Categorizer</div>')
 
 
 def hero(text, note=""):
@@ -100,13 +231,73 @@ def hero(text, note=""):
     st.html(f'<div class="hero">{html.escape(text)}</div>{note_html}')
 
 
-def stat(label, value, note=""):
-    st.html(f'<div class="stat"><div class="stat-label">{html.escape(label)}</div>'
-            f'<div class="stat-value">{html.escape(value)}</div>'
-            f'<div class="stat-note">{html.escape(note)}</div></div>')
+def hero_headline(month_text, spent_text, saved_text, notes):
+    """Overview hero: month label, "$1,499 spent, $2,801 saved" (saved part amber) and a muted line of notes."""
+    saved = f', <span class="amber">{html.escape(saved_text)}</span>' if saved_text else ""
+    notes_html = f'<div class="hero-notes">{html.escape(notes)}</div>' if notes else ""
+    st.html(f'<div class="hero-month">{html.escape(month_text)}</div>'
+            f'<div class="hero-big">{html.escape(spent_text)}{saved}</div>{notes_html}')
+
+
+def month_progress(left_label, right_label, fill, today_mark, note):
+    """Amber bar = share spent, white line = how far through the month today is. fill/today_mark are 0-1 or None."""
+    bar = ""
+    if fill is not None:
+        line = f'<div class="today" style="left:calc({today_mark * 100:.1f}% - 1px)"></div>' \
+            if today_mark is not None else ""
+        bar = (f'<div class="progress-top"><span>{html.escape(left_label)}</span>'
+               f'<span>{html.escape(right_label)}</span></div>'
+               f'<div class="progress"><div class="fill" style="width:{min(fill, 1) * 100:.1f}%"></div>{line}</div>')
+    st.html(f'{bar}<div class="progress-note">{html.escape(note)}</div>')
+
+
+def tile_head(title, side=""):
+    side_html = f'<span class="tile-side">{html.escape(side)}</span>' if side else ""
+    st.html(f'<div class="tile-head"><span class="tile-title">{html.escape(title)}</span>{side_html}</div>')
+
+
+def pace_tile(label, big, text):
+    st.html(f'<div class="tile-label">{html.escape(label)}</div><div class="pace-big">{html.escape(big)}</div>'
+            f'<div class="pace-text">{html.escape(text)}</div>')
+
+
+def ask_tile(question):
+    st.html(f'<div class="ask-label">Ask the advisor</div><div class="ask-quote">“{html.escape(question)}”</div>'
+            '<div class="ask-text">Get a plan worked out by the app, with tips from your local AI.</div>')
+
+
+def recent_rows(rows):
+    """rows: (date text, merchant, category, amount, needs a check) tuples."""
+    body = "".join(
+        f'<tr><td class="d">{html.escape(d)}</td><td class="m" title="{html.escape(m)}">{html.escape(m)}</td>'
+        f'<td><span class="dot" style="background:{category_color(c)}"></span>{html.escape(c)}'
+        f'{"<span class=badge>check</span>" if check else ""}</td><td class="a">{money(a)}</td></tr>'
+        for d, m, c, a, check in rows)
+    st.html(f'<table class="recent">{body}</table>')
+
+
+def user_bubble(text):
+    """The user's question as a dark bubble on the right (HTML, so $ amounts are always plain text)."""
+    st.html(f'<div class="user-row"><div class="user-bubble">{html.escape(text)}</div></div>')
+
+
+def plan_tiles(rows):
+    """One tile per category: the cut (big) and a small bar sized against the biggest cut."""
+    top = max((r["cut"] for r in rows), default=0) or 1
+    tiles = "".join(
+        f'<div class="plan-tile"><div class="plan-cat">{html.escape(r["category"])}</div>'
+        f'<div class="plan-cut">-${r["cut"]:,.2f}</div><div class="plan-bar"><div style="width:{r["cut"] / top * 100:.0f}%;'
+        f'background:{category_color(r["category"])}"></div></div></div>' for r in rows)
+    st.html(f'<div class="plan-grid">{tiles}</div>')
+
+
+def plan_total(total, note):
+    st.html(f'<div class="plan-total"><span class="ok">✓ Total ${total:,.2f}, calculated by the app</span>'
+            f'<span class="muted">{html.escape(note)}</span></div>')
 
 
 def budget_row(r):
+    """Status colour on the bar and icon, always with a word (never colour alone)."""
     color, icon = STATUS[r["state"]]
     if r["state"] == "ok":
         word = f"On track, {money(r['remaining'])} left"
@@ -115,22 +306,27 @@ def budget_row(r):
     else:
         word = f"Over by {money(-r['remaining'])}"
     width = min(r["pct"], 1) * 100
+    # The amber warning colour is too light for text on white, so the words stay dark; the icon keeps the colour.
+    word_color = STATUS["over"][0] if r["state"] == "over" else MUTED
     st.html(
         f'<div class="budget-row"><div class="budget-top"><span class="budget-name">{html.escape(r["category"])}'
-        f'</span><span>{money(r["spent"])} of {money(r["limit"])}</span></div>'
+        f'</span><span>{r["pct"]:.0%}</span></div>'
         f'<div class="budget-bar"><div class="budget-fill" style="width:{width:.1f}%;background:{color}"></div></div>'
-        f'<div class="budget-state" style="color:{color}"><b>{icon}</b> {html.escape(word)}</div></div>')
+        f'<div class="budget-state" style="color:{word_color}" title="{money(r["spent"])} of {money(r["limit"])}">'
+        f'<b style="color:{color}">{icon}</b> {html.escape(word)}</div></div>')
 
 
 # ---------- charts ----------
 
 def _base(fig, height, legend=False):
-    grid = "rgba(128,128,128,0.15)"
+    """The one shared chart style: app fonts, transparent background, light grid, the same margins."""
+    grid = "rgba(19,38,31,0.08)"
     fig.update_layout(
         height=height, margin=dict(l=8, r=8, t=8, b=8), paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)", dragmode=False, showlegend=legend, bargap=0.45,
-        font=dict(color=ink(), size=13), hoverlabel=dict(font_size=13),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=None),
+        font=dict(family=FONT, color=ink(), size=13),
+        hoverlabel=dict(font=dict(family=FONT, size=13), bgcolor="#FFFFFF", bordercolor=LINE),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=None, font=dict(family=FONT)),
     )
     fig.update_xaxes(gridcolor=grid, zeroline=False, fixedrange=True, automargin=True)
     fig.update_yaxes(gridcolor=grid, zeroline=False, fixedrange=True, automargin=True, ticksuffix="  ")
@@ -158,7 +354,7 @@ def hbar(series, by_category=True):
         text=[money(v) for v in s.values], textposition="outside", cliponaxis=False,
         hovertemplate="%{y}: %{text}<extra></extra>"))
     _base(fig, height=max(160, 44 * len(s) + 30))
-    fig.update_xaxes(showgrid=False, showticklabels=False, range=[0, float(s.max()) * 1.25 if len(s) else 1])
+    fig.update_xaxes(showgrid=False, showticklabels=False, range=[0, float(s.max()) * 1.4 if len(s) else 1])
     return _rounded(fig)
 
 

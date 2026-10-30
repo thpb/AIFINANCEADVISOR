@@ -140,7 +140,7 @@ Install [Ollama](https://ollama.com), then:
 ollama pull qwen2.5:3b-instruct-q8_0
 ```
 
-Nothing leaves your computer. Any other model you have pulled can be typed into the **Local model** box in the sidebar (`ollama list` shows yours). The context size is 8192 tokens by default. To change it:
+Nothing leaves your computer. Any other model you have pulled can be typed into the **Local model** box under Settings (top right) (`ollama list` shows yours). The context size is 8192 tokens by default. To change it:
 
 ```powershell
 $env:OLLAMA_NUM_CTX="16384"
@@ -150,7 +150,7 @@ The first question in a conversation takes longest (about 40-60 seconds on an RT
 
 ### Groq (free cloud)
 
-Choose "Groq (free cloud)" in the sidebar and paste a free API key from console.groq.com. The key is kept in memory only. Groq gives smarter answers, but **your spending summary is sent to Groq's servers** when you ask the advisor. You can also set it before starting:
+Open Settings (top right), choose "Groq (free cloud)" and paste a free API key from console.groq.com. The key is kept in memory only. Groq gives smarter answers, but **your spending summary is sent to Groq's servers** when you ask the advisor. You can also set it before starting:
 
 ```powershell
 $env:ADVISOR_BACKEND="groq"
@@ -167,6 +167,16 @@ python -m unittest discover -s apptests   # 23 Streamlit AppTest flows (needs th
 ```
 
 AppTest can't type into `st.data_editor`, so the edit/delete logic is covered by `tests/test_income_and_editing.py`. Check editing and deleting a row once by hand in a browser.
+
+Screenshots of every page at desktop and phone width (logged in as the demo account; the advisor shot uses the real local model):
+
+```powershell
+python -m pip install playwright
+python -m playwright install chromium
+python tools/screenshots.py after          # writes screenshots/after/*.png (git-ignored)
+```
+
+The look (colours and fonts) is set in `.streamlit/config.toml`; the layout styling is the CSS in `src/ui.py`. The fonts load from Google Fonts, so without internet the app falls back to the system font.
 
 ## Project structure
 
@@ -211,7 +221,7 @@ apptests/                    Streamlit AppTest flows through the real app
 - Shops it has never seen are its weak spot (42.7% on unseen merchants, 80.2% with keyword hints).
 - The forecast is a simple run-rate. It can't know about bills that haven't arrived yet.
 - A 3B local model sometimes writes a number it shouldn't. The app flags dollar amounts and percentages that don't come from your data, but it can't catch a real number used in the wrong place.
-- The sidebar AI engine settings apply to the whole running app, which suits one person on one computer.
+- The AI engine settings apply to the whole running app, which suits one person on one computer.
 
 ## Acknowledgements
 

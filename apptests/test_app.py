@@ -65,7 +65,7 @@ class AppFlowTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def go(self, page):
-        self.at.radio(key="page").set_value(page).run()
+        self.at.segmented_control(key="page").set_value(page).run()
         self.assertFalse(self.at.exception, self.at.exception)
 
     def quick_add(self, text):
@@ -215,7 +215,7 @@ class AppFlowTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"GROQ_API_KEY": ""}):
             self.at.radio(key="engine").set_value("Groq (free cloud)").run()
             self.at.chat_input[0].set_value("Am I on track with my budgets?").run()
-        self.assertIn("Add your Groq API key in the sidebar", self.texts("error"))
+        self.assertIn("Add your Groq API key in Settings", self.texts("error"))
         self.at.radio(key="engine").set_value("Local (Ollama)").run()
 
     def test_reuploading_csv_adds_nothing(self):
@@ -239,10 +239,10 @@ class AppFlowTests(unittest.TestCase):
         at.session_state["user_id"] = uid
         at.run()
         for page in ["Overview", "Plan ahead", "Transactions", "AI advisor"]:
-            at.radio(key="page").set_value(page).run()
+            at.segmented_control(key="page").set_value(page).run()
             self.assertFalse(at.exception, (page, at.exception))
         self.assertIn("Add some spending first", " ".join(str(i.value) for i in at.info))
-        at.radio(key="page").set_value("Overview").run()
+        at.segmented_control(key="page").set_value("Overview").run()
         self.assertIn("No spending yet", " ".join(str(i.value) for i in at.info))
 
     def test_wrong_local_model_name(self):
@@ -293,7 +293,7 @@ class AppFlowTests(unittest.TestCase):
         self.at.run()
         self.at.selectbox(key="month").set_value(old).run()
         self.assertFalse(self.at.exception, self.at.exception)
-        self.assertIn("You spent $0 in", self.htmls())
+        self.assertIn("$0 spent", self.htmls())
         self.go("Plan ahead")
         self.assertIn("is finished: you spent $0", self.htmls())
 

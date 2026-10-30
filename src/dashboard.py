@@ -133,57 +133,66 @@ def save_new(df, source):
     return db.insert_transactions(uid, out, source=source)
 
 
-# ---------------------------------------------------------------- sidebar
+# ---------------------------------------------------------------- top bar: logo, pages, quick add, settings
 
-with st.sidebar:
-    page = st.radio("Page", PAGES, key="page", label_visibility="collapsed")
-    st.divider()
-    st.markdown(f"Signed in as **{ss.username or 'you'}**")
-    if st.button("Log out", icon=":material/logout:"):
-        for key in ["user_id", "history", "pending", "advisor_key"]:
-            ss[key] = None
-        ss.answers = {}
-        st.rerun()
+def go_to(target, question=None):
+    """Button callback: switch page (and optionally queue an advisor question)."""
+    ss.page = target
+    if question:
+        ss.queued = question
 
-    st.subheader("AI engine")
-    engine = st.radio("AI engine", ["Local (Ollama)", "Groq (free cloud)"], key="engine",
-                      label_visibility="collapsed")
-    if engine.startswith("Local"):
-        os.environ["ADVISOR_BACKEND"] = "ollama"
-        model = st.text_input("Local model", value=advisor.local_model(), key="local_model",
-                              help="Any model you have pulled with Ollama, for example qwen2.5:3b-instruct-q8_0. "
-                                   "Run `ollama list` to see yours.")
-        os.environ["OLLAMA_MODEL"] = model.strip()
-        st.caption("Runs on this computer. Nothing leaves it.")
-    else:
-        os.environ["ADVISOR_BACKEND"] = "groq"
-        key = st.text_input("Groq API key", type="password", key="groq_key",
-                            help="Free from console.groq.com. Kept in memory only, never saved.")
-        if key.strip():
-            os.environ["GROQ_API_KEY"] = key.strip()
-        st.caption("Groq gives smarter answers, but your spending summary is sent to Groq's servers when you "
-                   "ask the advisor.")
 
-    st.divider()
-    with st.expander("Danger zone"):
-        sure = st.checkbox("I want to delete all my transactions and income")
-        if st.button("Delete everything", type="primary", disabled=not sure):
-            n = db.delete_all_transactions(uid)
-            db.delete_all_income(uid)
-            ss.history = None
-            flash("🗑️", f"Deleted {n} transactions and all income. Your budgets are kept.")
+ss.setdefault("page", PAGES[0])
+with st.container(key="topbar", horizontal=True, vertical_alignment="center", gap="small"):
+    ui.brand()
+    with st.container(key="nav", width="content"):
+        page = st.segmented_control("Page", PAGES, key="page", required=True, label_visibility="collapsed")
+    with st.container(key="quickadd"):
+        with st.form("quick_add", clear_on_submit=True, border=False):
+            with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+                typed = st.text_input("Add an expense in plain English",
+                                      placeholder="Add: spent 50 on groceries yesterday", label_visibility="collapsed",
+                                      help='Try "Netflix 15.99", "paid $12.50 at Starbucks yesterday" or '
+                                           '"got paid 2000 salary".')
+                added = st.form_submit_button("Add", type="primary")
+    with st.popover("Settings", icon=":material/settings:", key="settings"):
+        st.markdown(f"Signed in as **{ss.username or 'you'}**")
+        if st.button("Log out", icon=":material/logout:"):
+            for key in ["user_id", "history", "pending", "advisor_key"]:
+                ss[key] = None
+            ss.answers = {}
             st.rerun()
 
-# ---------------------------------------------------------------- quick add (every page)
+        st.markdown("**AI engine**")
+        engine = st.radio("AI engine", ["Local (Ollama)", "Groq (free cloud)"], key="engine",
+                          label_visibility="collapsed")
+        if engine.startswith("Local"):
+            os.environ["ADVISOR_BACKEND"] = "ollama"
+            model = st.text_input("Local model", value=advisor.local_model(), key="local_model",
+                                  help="Any model you have pulled with Ollama, for example qwen2.5:3b-instruct-q8_0. "
+                                       "Run `ollama list` to see yours.")
+            os.environ["OLLAMA_MODEL"] = model.strip()
+            st.caption("Runs on this computer. Nothing leaves it.")
+        else:
+            os.environ["ADVISOR_BACKEND"] = "groq"
+            key = st.text_input("Groq API key", type="password", key="groq_key",
+                                help="Free from console.groq.com. Kept in memory only, never saved.")
+            if key.strip():
+                os.environ["GROQ_API_KEY"] = key.strip()
+            st.caption("Groq gives smarter answers, but your spending summary is sent to Groq's servers when you "
+                       "ask the advisor.")
 
-ui.app_title()
-with st.container(key="quickadd"):
-    with st.form("quick_add", clear_on_submit=True, border=False):
-        c1, c2 = st.columns([6, 1], vertical_alignment="bottom")
-        typed = c1.text_input("Add an expense in plain English", placeholder="spent 50 on groceries yesterday",
-                              label_visibility="collapsed")
-        added = c2.form_submit_button("Add", type="primary", width="stretch")
-    st.caption('Try "Netflix 15.99", "paid \\$12.50 at Starbucks yesterday" or "got paid 2000 salary".')
+        st.divider()
+        with st.expander("Danger zone"):
+            sure = st.checkbox("I want to delete all my transactions and income")
+            if st.button("Delete everything", type="primary", disabled=not sure):
+                n = db.delete_all_transactions(uid)
+                db.delete_all_income(uid)
+                ss.history = None
+                flash("🗑️", f"Deleted {n} transactions and all income. Your budgets are kept.")
+                st.rerun()
+
+# ---------------------------------------------------------------- quick add (every page)
 
 if added and typed.strip():
     try:
@@ -286,7 +295,7 @@ def prev_month(month):
 
 # ---------------------------------------------------------------- Overview
 
-def page_overview():
+def more_ways_to_add():
     with st.expander("More ways to add: CSV import, a form, or income"):
         t_csv, t_hand, t_income = st.tabs(["Import a CSV", "Enter one by hand", "Add income"])
         with t_csv:
@@ -351,11 +360,17 @@ def page_overview():
                     flash("💰", f"Saved {money(amount)} of income.")
                     st.rerun()
 
-    month = month_picker()
+def page_overview():
     if spend.empty and income.empty:
         st.info("No spending yet. Type a purchase in the box above, or import a CSV under "
                 "\"More ways to add\".", icon=":material/add_circle:")
+        more_ways_to_add()
         return
+
+    with st.container(key="hero"):
+        left, right = st.columns([1.6, 1], gap="large", vertical_alignment="bottom")
+        with right:
+            month = month_picker()
 
     rows = spend[spend["date"].dt.strftime("%Y-%m") == month] if not spend.empty else spend
     total = float(rows["amount"].sum()) if not rows.empty else 0.0
@@ -363,6 +378,8 @@ def page_overview():
     statuses = bud.budget_status(spend, budget_map, month) if not spend.empty else []
     alerts = bud.alert_messages(statuses)
     review = corrections.needs_review(spend)
+    fc = planning.forecast_month(spend, month, today, budget_map)
+    by_cat = rows.groupby("predicted_category")["amount"].sum() if not rows.empty else pd.Series(dtype=float)
 
     notes = []
     prev = prev_month(month)
@@ -376,74 +393,129 @@ def page_overview():
             notes.append(f"You earned {money(summary['income'])} and saved {money(summary['saved'])}.")
         else:
             notes.append(f"You spent {money(-summary['saved'])} more than you earned.")
+    else:
+        notes.append('Add income to see what you save. Try "got paid 2000 salary".')
     if budget_map:
         notes.append(f"{len(alerts)} budget{'s' if len(alerts) != 1 else ''} need attention."
                      if alerts else "All budgets are on track.")
     if len(review):
         notes.append("1 category is worth checking." if len(review) == 1
                      else f"{len(review)} categories are worth checking.")
-    ui.hero(f"You spent {money(total)} in {month_label(month)}", " ".join(notes))
 
-    s1, s2, s3, s4 = st.columns(4)
-    with s1:
-        by_cat = rows.groupby("predicted_category")["amount"].sum() if not rows.empty else pd.Series(dtype=float)
-        if len(by_cat):
-            ui.stat("Top category", by_cat.idxmax(), money(by_cat.max()))
-        else:
-            ui.stat("Top category", "None yet", "")
-    with s2:
-        if not rows.empty:
-            big = rows.loc[rows["amount"].idxmax()]
-            ui.stat("Biggest purchase", money(big["amount"]), f"{big['merchant']}, {big['date']:%d/%m}")
-        else:
-            ui.stat("Biggest purchase", "None yet", "")
-    with s3:
-        ui.stat("Transactions", str(len(rows)), "this month")
-    with s4:
-        if summary["income"] > 0:
-            ui.stat("Saved", money(summary["saved"]), f"{summary['rate']:.0%} of {money(summary['income'])} income")
-        else:
-            ui.stat("Saved", "Add income", 'Try "got paid 2000 salary"')
-
-    left, right = st.columns(2, gap="large")
+    # ---- hero band: the headline and how far through the month the spending is ----
+    saved_text = ""
+    if summary["income"] > 0:
+        saved_text = (f"{money(round(summary['saved']))} saved" if summary["saved"] >= 0
+                      else f"{money(round(-summary['saved']))} over income")
+    if summary["income"] > 0:
+        base, basis = summary["income"], "income"
+        right_label = f"{total / base:.0%} of {money(base)} income spent"
+    elif budget_map:
+        base, basis = float(sum(budget_map.values())), "budgets"
+        right_label = f"{total / base:.0%} of {money(base)} budgets used"
+    else:
+        base, basis, right_label = None, "", ""
+    if fc["status"] == "current":
+        day_mark, left_label = fc["days_elapsed"] / fc["days_in_month"], \
+            f"Day {fc['days_elapsed']} of {fc['days_in_month']}"
+    elif fc["status"] == "past":
+        day_mark, left_label = 1.0, f"All {fc['days_in_month']} days"
+    else:
+        day_mark, left_label = 0.0, "Not started"
+    if base is None:
+        pace_note = "Add income or budgets to see how the month is going."
+    elif fc["status"] == "past":
+        pace_note = f"{month_label(month)} is finished: you spent {total / base:.0%} of your {basis}."
+    elif fc["status"] == "future":
+        pace_note = f"{month_label(month)} hasn't started yet."
+    else:
+        ahead = total / base - day_mark
+        pace_note = "The white line is today. " + (
+            "Spending is well ahead of the month." if ahead > 0.10 else
+            "Spending is a little ahead of the month." if ahead > 0.03 else
+            "Spending is well behind the month." if ahead < -0.10 else
+            "Spending is a little behind the month." if ahead < -0.03 else
+            "Spending is keeping pace with the month.")
     with left:
-        st.subheader("Budgets")
-        for msg in alerts:
-            st.warning(ui.esc(msg))
-        if not statuses:
-            st.caption("No budgets yet. Set one below and the app will warn you at 80%.")
-        for r in statuses:
-            ui.budget_row(r)
-        with st.expander("Set or change budgets"):
-            with st.form("budgets_form", border=False):
-                values = {}
-                for cat in CATEGORIES:
-                    values[cat] = st.number_input(cat, min_value=0.0, max_value=float(nl_entry.MAX_AMOUNT), step=50.0,
-                                                  value=float(budget_map.get(cat, 0)), key=f"budget_{cat}",
-                                                  help="0 means no budget.")
-                if st.form_submit_button("Save budgets", type="primary"):
-                    for cat, v in values.items():
-                        if v > 0:
-                            db.set_budget(uid, cat, v)
-                        else:
-                            db.delete_budget(uid, cat)
-                    flash("✅", "Budgets saved.")
-                    st.rerun()
+        ui.hero_headline(month_label(month), f"{money(round(total))} spent", saved_text, " ".join(notes))
     with right:
-        st.subheader(f"Where it went in {month_label(month)}")
-        positive = by_cat[by_cat > 0] if len(by_cat) else by_cat
-        if len(positive):
-            ui.show(ui.hbar(positive), alt=f"Spending by category in {month_label(month)}")
-        else:
-            st.caption("Nothing spent this month yet.")
+        ui.month_progress(left_label, right_label, total / base if base else None, day_mark, pace_note)
+
+    # ---- bento grid ----
+    col_main, col_mid, col_side = st.columns([2.05, 1, 1], gap="medium")
+    with col_main:
+        with st.container(key="tile_where"):
+            ui.tile_head("Where it went", f"Top category: {by_cat.idxmax()}" if len(by_cat) else "")
+            positive = by_cat[by_cat > 0] if len(by_cat) else by_cat
+            if len(positive):
+                ui.show(ui.hbar(positive), alt=f"Spending by category in {month_label(month)}")
+            else:
+                st.caption("Nothing spent this month yet.")
+        with st.container(key="tile_recent"):
+            with st.container(horizontal=True, vertical_alignment="center"):
+                ui.tile_head("Recent")
+                st.button("All transactions", key="link_txns", type="tertiary", on_click=go_to,
+                          args=("Transactions",))
+            if spend.empty:
+                st.caption("No spending yet.")
+            else:
+                newest = spend.sort_values(["date", "id"], ascending=False).head(5)
+                conf = pd.to_numeric(newest["confidence"], errors="coerce")
+                ui.recent_rows([(f"{r.date.day} {r.date:%b}", r.merchant, r.predicted_category, r.amount,
+                                 bool(c < corrections.LOW_CONFIDENCE)) for r, c in zip(newest.itertuples(), conf)])
+    with col_mid:
+        with st.container(key="tile_pace"):
+            if fc["status"] == "current" and not fc["too_early"]:
+                warning = (planning.forecast_messages(fc) or alerts or [""])[0]
+                ui.pace_tile("On pace for", money(round(fc["projected"])),
+                             f"by {fc['days_in_month']} {month_label(month).split()[0]} if you keep spending at "
+                             f"this pace. {warning}")
+            elif fc["status"] == "current":
+                ui.pace_tile("Too early to forecast", money(fc["spent"]),
+                             f"spent in the first {fc['days_elapsed']} days. The forecast starts on day "
+                             f"{planning.TOO_EARLY_DAYS}.")
+            elif fc["status"] == "past":
+                ui.pace_tile(f"{month_label(month)} is finished", money(fc["spent"]), "spent in the whole month.")
+            else:
+                ui.pace_tile(month_label(month), money(0), "This month hasn't started yet.")
+            st.button("See the forecast", key="link_plan", type="tertiary", on_click=go_to, args=("Plan ahead",))
+        with st.container(key="tile_ask"):
+            ui.ask_tile(TRY_ASKING[0])
+            st.button("Ask now", key="amber_ask", on_click=go_to, args=("AI advisor", TRY_ASKING[0]))
+    with col_side:
+        with st.container(key="tile_budgets", height="stretch"):
+            ui.tile_head("Budgets")
+            if not statuses:
+                st.caption("No budgets yet. Set one below and the app will warn you at 80%.")
+            for r in statuses:
+                ui.budget_row(r)
+            with st.expander("Set or change budgets"):
+                with st.form("budgets_form", border=False):
+                    values = {}
+                    for cat in CATEGORIES:
+                        values[cat] = st.number_input(cat, min_value=0.0, max_value=float(nl_entry.MAX_AMOUNT),
+                                                      step=50.0, value=float(budget_map.get(cat, 0)),
+                                                      key=f"budget_{cat}", help="0 means no budget.")
+                    if st.form_submit_button("Save budgets", type="primary"):
+                        for cat, v in values.items():
+                            if v > 0:
+                                db.set_budget(uid, cat, v)
+                            else:
+                                db.delete_budget(uid, cat)
+                        flash("✅", "Budgets saved.")
+                        st.rerun()
 
     if not spend.empty:
-        st.subheader("Month by month")
-        inc = savings.income_by_month(income)
-        ui.show(ui.month_chart(ui.month_rows(spend), inc if len(inc) else None, highlight=month),
-                alt="Monthly spending by category with income")
-        if len(inc):
-            st.caption("Bars are spending per category. The line is income: the gap above the bars is what you saved.")
+        with st.container(key="tile_months"):
+            ui.tile_head("Month by month")
+            inc = savings.income_by_month(income)
+            ui.show(ui.month_chart(ui.month_rows(spend), inc if len(inc) else None, highlight=month),
+                    alt="Monthly spending by category with income")
+            if len(inc):
+                st.caption("Bars are spending per category. The line is income: the gap above the bars is what "
+                           "you saved.")
+    with st.container(key="tile_more"):
+        more_ways_to_add()
 
 
 # ---------------------------------------------------------------- Plan ahead
@@ -696,15 +768,19 @@ def show_plan(plan):
              "Cut": f"{plan['percent']:.1%}"} for r in plan["rows"]]
     rows.append({"Category": "Total", "Usually spend a month": round(sum(r["average"] for r in plan["rows"]), 2),
                  "Spend less by": plan["total_cut"], "Cut": ""})
-    st.markdown(ui.esc(f"**Plan to save {money(plan['goal'])} in one month (calculated by the app)**"))
-    st.dataframe(pd.DataFrame(rows), hide_index=True, column_config={
-        c: st.column_config.NumberColumn(format="dollar") for c in ["Usually spend a month", "Spend less by"]})
+    ui.plan_tiles(plan["rows"])
+    fixed = f" {', '.join(plan['excluded'])} left out as mostly fixed costs." if plan["excluded"] else ""
+    ui.plan_total(plan["total_cut"], f"{plan['percent']:.1%} off each category.{fixed}")
     st.caption(f"Based on your average of {', '.join(month_label(m) for m in plan['months'])}. Each category is cut by "
                f"the same share, never more than {money_facts.MAX_CUT:.0%}. "
                + (f"{', '.join(plan['excluded'])} left out as mostly fixed costs." if plan["excluded"] else ""))
     if not plan["feasible"]:
         st.warning(ui.esc(f"{money(plan['goal'])} is more than {money_facts.MAX_CUT:.0%} of your flexible spending. "
                           f"This plan reaches {money(plan['max_possible'])}, the most that's realistic in one month."))
+    with st.expander("See the numbers"):
+        st.markdown(ui.esc(f"**Plan to save {money(plan['goal'])} in one month (calculated by the app)**"))
+        st.dataframe(pd.DataFrame(rows), hide_index=True, column_config={
+            c: st.column_config.NumberColumn(format="dollar") for c in ["Usually spend a month", "Spend less by"]})
 
 
 def show_visual(spec):
@@ -730,26 +806,44 @@ def handle(question, history):
     return new_history
 
 
+def advisor_sees():
+    """The short list for the strip: what the data summary covers."""
+    parts = []
+    n_months = spend["date"].dt.strftime("%Y-%m").nunique() if not spend.empty else 0
+    parts.append(f"{n_months} month{'s' if n_months != 1 else ''} of spending" if n_months else "no spending yet")
+    if budget_map:
+        parts.append("your budgets")
+    if not income.empty:
+        parts.append("income and savings")
+    return parts
+
+
 def page_advisor():
-    st.subheader("AI advisor")
-    st.caption("Ask about your spending. The app calculates every number; the AI only explains and gives tips.")
     key = data_key()
     if ss.history is None or ss.advisor_key != key:
         ss.history = advisor.start_conversation(spend, advisor.app_context(spend, income, budget_map), today=today)
         ss.advisor_key = key
         ss.answers = {}
 
-    with st.expander("What the advisor can see"):
-        st.caption("The advisor answers only from this summary of your own data. With the local engine it never "
-                   "leaves this computer.")
-        st.text(ss.history[1]["content"])
+    with st.container(key="strip", horizontal=True, vertical_alignment="center", gap="small"):
+        items = "".join(f"<span>{p}</span>" for p in advisor_sees())
+        st.html(f'<div class="strip"><b>The advisor can see</b>{items}</div>')
+        with st.popover("Show the full summary", type="tertiary"):
+            st.caption("The advisor answers only from this summary of your own data. With the local engine it never "
+                       "leaves this computer.")
+            st.text(ss.history[1]["content"])
+        if len(ss.history) > 3 and st.button("Clear conversation", type="tertiary", key="clear_chat"):
+            ss.history, ss.answers = None, {}
+            st.rerun()
 
-    for msg in ss.history[3:]:
-        if msg["role"] == "user":
-            with st.chat_message("user"):
-                st.markdown(ui.plain_dollars(msg["content"].split(advisor.NOTE_MARK)[0]))
-        else:
-            with st.chat_message("assistant"):
+    with st.container(key="chat"):
+        if len(ss.history) <= 3:
+            st.caption("Ask about your spending. The app calculates every number; the AI only explains and gives "
+                       "tips.")
+        for i, msg in enumerate(ss.history[3:], start=3):
+            if msg["role"] == "user":
+                ui.user_bubble(msg["content"].split(advisor.NOTE_MARK)[0])
+            else:
                 st.markdown(ui.no_headings(ui.plain_dollars(msg["content"])))
                 info = ss.answers.get(hash(msg["content"]), {})
                 if info.get("plan"):
@@ -762,23 +856,19 @@ def page_advisor():
                 if info.get("model"):
                     st.caption(f"Answered by {info['model']}")
 
-    if spend.empty:
-        st.info("Add some spending first, then the advisor has something to talk about.")
-        return
+        if spend.empty:
+            st.info("Add some spending first, then the advisor has something to talk about.")
+            return
 
-    c1, c2 = st.columns([1, 1])
-    insights = c1.button("Get spending insights", icon=":material/lightbulb:", width="stretch")
-    if c2.button("Clear conversation", icon=":material/delete_sweep:", width="stretch"):
-        ss.history, ss.answers = None, {}
-        st.rerun()
-    st.caption("Try asking")
-    with st.container(horizontal=True):
-        for q in TRY_ASKING:
-            if st.button(q.replace("$", "\\$"), key=f"try_{q}"):
-                ss.queued = q
-    st.caption('For a chart or table, ask things like "show my dining spending by month as a chart", '
-               '"top 10 purchases" or "income vs spending by month".')
-    typed = st.chat_input("Ask a question about your spending...")
+        st.space("medium")
+        st.caption('For a chart or table, ask things like "show my dining spending by month as a chart", '
+                   '"top 10 purchases" or "income vs spending by month".')
+        with st.container(key="suggest", horizontal=True, gap="small"):
+            insights = st.button("Get spending insights", icon=":material/lightbulb:")
+            for q in TRY_ASKING:
+                if st.button(q.replace("$", "\\$"), key=f"try_{q}"):
+                    ss.queued = q
+        typed = st.chat_input("Ask about your spending, or ask for a chart...")
 
     question = typed or ss.queued
     ss.queued = None
@@ -797,7 +887,7 @@ def page_advisor():
                 ss.history = handle(question, ss.history)
     except Exception as err:
         st.error(ui.esc(f"The advisor couldn't answer: {err} Make sure Ollama is running (`ollama serve`), "
-                        "or switch the AI engine in the sidebar to Groq."))
+                        "or switch the AI engine in Settings to Groq."))
         return
     st.rerun()
 

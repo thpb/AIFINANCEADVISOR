@@ -51,7 +51,7 @@ class BackendTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"GROQ_API_KEY": ""}):
             with self.assertRaises(advisor.AdvisorError) as ctx:
                 advisor.groq_chat(MSG)
-        self.assertEqual(str(ctx.exception), "Add your Groq API key in the sidebar (or set GROQ_API_KEY).")
+        self.assertEqual(str(ctx.exception), "Add your Groq API key in Settings (or set GROQ_API_KEY).")
 
     def test_401(self):
         with mock.patch("advisor.requests.post", return_value=response(401, {})):

@@ -146,7 +146,7 @@ long, and the oldest text is the spending data. So the app trims old questions f
 the data (`src/advisor.py`, `_trim_history`; `num_ctx` is sent on every call in `ollama_chat`).
 
 Setting: `DEFAULT_LOCAL_MODEL`, `LOCAL_CONTEXT` and `ADVICE_TEMPERATURE = 0.2` (low randomness, so
-answers stay close to the facts) in `src/advisor.py`. The model name can be changed in the sidebar.
+answers stay close to the facts) in `src/advisor.py`. The model name can be changed under Settings.
 
 ---
 

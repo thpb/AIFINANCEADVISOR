@@ -169,7 +169,7 @@ def _groq_error(r):
 def groq_chat(messages, **extra):
     key = _groq_key()
     if not key:
-        raise AdvisorError("Add your Groq API key in the sidebar (or set GROQ_API_KEY).")
+        raise AdvisorError("Add your Groq API key in Settings (or set GROQ_API_KEY).")
     model = os.environ.get("GROQ_MODEL") or _groq_models.get(key) or GROQ_PREFERRED[0]
     try:
         r = _groq_post(key, model, messages, extra)

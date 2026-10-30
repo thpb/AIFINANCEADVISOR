@@ -233,3 +233,18 @@ an 8,192 window, so Ollama could silently drop the spending data. Now `CHARS_PER
 - Final: 170 unit tests, 23 AppTests pass. Zip rebuilt: `../expense-categorizer.zip`.
 
 All improvement prompts (0-9) are done.
+
+# Restyle to option C (mockup_c_overview / mockup_c_advisor)
+
+- Theme in `.streamlit/config.toml` (green/cream, IBM Plex Sans + Space Grotesk via the theme's Google Fonts
+  support). Layout CSS in `src/ui.py`.
+- Top bar replaces the sidebar: logo, `st.segmented_control(key="page", required=True)` styled as pills, quick add
+  (same form and confirm step), Settings popover (engine, model, Groq key, user, log out, danger zone).
+- Overview: dark hero band (headline, notes, month picker, month progress bar), bento tiles (Where it went, On pace
+  for, Budgets, Recent, Ask the advisor), Month by month, More ways to add. Numbers from the existing code.
+- Advisor: "can see" strip with full-summary popover, 860px chat column, HTML user bubbles, plan tiles + total
+  line (the plan table moved into "See the numbers"), suggestion pills above an inline chat input.
+- Tests: logic untouched. Changed only where the restyle forced it: `at.radio(key="page")` ->
+  `at.segmented_control(key="page")` (3 lines), "You spent $0 in" -> "$0 spent", and the Groq message now says
+  "in Settings" instead of "in the sidebar" (advisor.py + 2 assertions). 170 unit + 23 AppTests pass.
+- Screenshots: `python tools/screenshots.py before|after` (Playwright), output in git-ignored `screenshots/`.
