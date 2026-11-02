@@ -1,0 +1,17 @@
+                          sentence      merchant   model guess sure         final               why
+   spent 50 on groceries yesterday     groceries     Groceries 100%     Groceries  word "groceries"
+                       coles 82.40         coles Subscriptions  98%     Groceries      word "coles"
+                     woolworths 61    woolworths     Groceries 100%     Groceries word "woolworths"
+                       coffee 5.50        coffee        Dining  98%        Dining     word "coffee"
+                    lunch 18 today         lunch        Dining  74%        Dining      word "lunch"
+               uber 23 last friday          uber     Transport 100%     Transport       word "uber"
+                         opal 4.80          opal     Transport  98%     Transport       word "opal"
+                         petrol 70        petrol     Transport  73%     Transport     word "petrol"
+                     netflix 15.99       netflix         Other  87% Subscriptions    word "netflix"
+                          rent 450          rent         Other  57%         Bills       word "rent"
+                  movie tickets 32 movie tickets Subscriptions  37% Entertainment    word "tickets"
+                          kmart 45         kmart         Other  40%      Shopping      word "kmart"
+                    starbucks 7.20     starbucks        Dining 100%        Dining  word "starbucks"
+                      amazon 39.99        amazon         Other  97%         Other             model
+paid $12.50 at Starbucks yesterday     Starbucks        Dining 100%        Dining  word "starbucks"
+                  zorbo widgets 20 zorbo widgets Subscriptions  93% Subscriptions             model

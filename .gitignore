@@ -1,6 +1,39 @@
-data/*
-!data/.gitkeep
+# Python
 __pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
 venv/
 .venv/
+env/
+ENV/
+
+# Secrets and API keys (e.g. GROQ_API_KEY)
+.env
+.env.*
+*.env
+.streamlit/secrets.toml
+*.key
+
+# The app's database: user accounts and password hashes
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Model download caches (HuggingFace / sentence-transformers)
+.cache/
+huggingface/
+hf_cache/
+models--*/
+
+# Generated material that is not part of the code
 screenshots/
+report_evidence/
+report_examples/
+report_examples.zip
+presentation_pack/
+presentation_pack.zip

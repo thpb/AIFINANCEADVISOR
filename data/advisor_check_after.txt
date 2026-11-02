@@ -1,0 +1,98 @@
+Engine: ollama, model: qwen2.5:3b-instruct-q8_0
+
+====================================================================================================
+Q: How can I save $300 this month?
+A (27s):
+To save $300 this month, focus on these categories:
+
+- **Groceries**: Spend $79.79 less
+- **Shopping**: Spend $74.44 less
+- **Other**: Spend $39.01 less
+
+### Practical Tips:
+1. **Groceries**: Make a detailed weekly shopping list and stick to it. Avoid impulse buys and use coupons or shop at discount stores.
+2. **Shopping**: Review your subscriptions and cancel any that you don't use frequently. Opt for cheaper alternatives or use cashback apps for discounts.
+3. **Other**: Cut back on dining out and consider cooking at home more often. Use public transportation or carpool to reduce transport costs.
+
+  [savings plan, calculated by the app] goal $300, total $300, cut 9.8% each, feasible=True, left out: ['Bills']
+    Groceries      usually    $813.78  spend less by    $79.79
+    Shopping       usually    $759.23  spend less by    $74.44
+    Other          usually    $397.89  spend less by    $39.01
+    Dining         usually    $394.42  spend less by    $38.67
+    Entertainment  usually    $346.82  spend less by       $34
+    Transport      usually    $235.25  spend less by    $23.07
+    Subscriptions  usually    $112.44  spend less by    $11.02
+  Answered by Qwen 2.5 3B on this computer (8-bit)
+====================================================================================================
+Q: What changed most since last month?
+A (24s):
+The biggest change compared to 2026-09 occurred in 2026-10:
+- Shopping: $150.72 -> $998.92, up $848.20 (+563%)
+- Entertainment: $224.59 -> $422.89, up $198.30 (+88%)
+- Transport: $276.57 -> $87.23, down $189.34 (-68%)
+
+  Answered by Qwen 2.5 3B on this computer (8-bit)
+====================================================================================================
+Q: Show my dining spending by month as a chart
+A (51s):
+The chart shows that dining spending fluctuates each month. Notable changes include:
+- 2026-03: $146.73, down $239.36 (-49%)
+- 2026-06: $245.83, up $101.71 (+68%)
+- 2026-08: $495.88, up $61.83 (+13%)
+- 2026-10: $349.57, up $96.23 (+38%)
+
+These months highlight significant variations, with 2026-03 showing the largest drop and 2026-06 the largest increase.
+
+  [chart] Dining spending by month, February 2026 to October 2026  spec={'kind': 'monthly_spending', 'format': 'chart', 'categories': ['Dining'], 'month': None, 'months': 24, 'limit': 10}
+      Month  Dining   Change
+    2026-02 $386.09         
+    2026-03 $146.73 -$239.36
+    2026-04 $159.47  +$12.74
+    2026-05 $144.12  -$15.35
+    2026-06 $245.83 +$101.71
+    2026-07 $434.05 +$188.22
+    2026-08 $495.88  +$61.83
+    2026-09 $253.34 -$242.54
+    2026-10 $349.57  +$96.23
+  Answered by Qwen 2.5 3B on this computer (8-bit)
+====================================================================================================
+Q: Am I on track with my budgets?
+A (30s):
+You are generally on track with your budgets, but there are some areas to monitor closely:
+
+- **Entertainment**: $422.89 of $450, 94% close to the limit
+- **Shopping**: $998.92 of $1,100, 91% close to the limit
+- **Groceries**: $898.35 of $1,000, 90% close to the limit
+- **Dining**: $349.57 of $400, 87% close to the limit
+- **Transport**: $87.23 of $450, 19% on track
+
+Only **Transport** is on track, while the others are close to their limits.
+
+  [table] Budgets, October 2026  spec={'kind': 'budget_status', 'format': 'table', 'categories': [], 'month': '2026-10', 'months': 6, 'limit': 10}
+         Category Budget   Spent    Left Used              State
+    Entertainment   $450 $422.89  $27.11  94% close to the limit
+         Shopping $1,100 $998.92 $101.08  91% close to the limit
+        Groceries $1,000 $898.35 $101.65  90% close to the limit
+           Dining   $400 $349.57  $50.43  87% close to the limit
+        Transport   $450  $87.23 $362.77  19%           on track
+  Answered by Qwen 2.5 3B on this computer (8-bit)
+====================================================================================================
+Q: Give me a table of my top 5 purchases
+A (38s):
+Your top 5 purchases are:
+- 01/05/2026: $282.94 at TARGET #4292 (Other)
+- 20/03/2026: $269.23 at TST* TARGET (Other)
+- 21/05/2026: $252.23 at VENMO PAYMENT (Subscriptions)
+- 02/05/2026: $250.40 at TARGET #1398 (Other)
+- 26/03/2026: $246.12 at WALMART.COM #2573 (Shopping)
+
+The largest purchase was $282.94 on 01/05/2026.
+
+  [table] Top 5 purchases, February 2026 to October 2026  spec={'kind': 'top_purchases', 'format': 'table', 'categories': [], 'month': None, 'months': 24, 'limit': 5}
+          Date          Merchant      Category  Amount
+    01/05/2026      TARGET #4292         Other $282.94
+    20/03/2026       TST* TARGET         Other $269.23
+    21/05/2026     VENMO PAYMENT Subscriptions $252.23
+    02/05/2026      TARGET #1398         Other $250.40
+    26/03/2026 WALMART.COM #2573      Shopping $246.12
+  Answered by Qwen 2.5 3B on this computer (8-bit)

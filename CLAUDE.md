@@ -35,4 +35,4 @@ streamlit run src/dashboard.py
 - `src/`: one module per concern (see README "Project structure"). Every script starts with `import _root`.
 - `tests/`: unit tests with fakes and mocks, no network. `tests/helpers.py` gives a throwaway database.
 - `apptests/`: Streamlit AppTest flows through the real app with a mocked Ollama.
-- `data/`: git-ignored (CSVs, models, `app.db`).
+- `data/`: CSVs and trained models are in git; `app.db` (accounts and password hashes) is git-ignored.

@@ -1,0 +1,88 @@
+Engine: ollama, model: qwen2.5:3b-instruct-q8_0
+
+====================================================================================================
+Q: How can I save $300 this month?
+A (62s):
+To save $300 this month, focus on these categories:
+
+- **Groceries**: Reduce spending by $79.79 (9.8%) to $733.99.
+- **Shopping**: Reduce spending by $74.44 (9.8%) to $684.79.
+- **Other**: Reduce spending by $39.01 (9.8%) to $358.88.
+
+Practical tips:
+1. Make a detailed shopping list before going out to avoid impulse buys.
+2. Use coupons and shop during sales to save on groceries and other items.
+3. Cut back on subscriptions that you don't use frequently.
+
+  [savings plan, calculated by the app] goal $300, total $300, cut 9.8% each, feasible=True, left out: ['Bills']
+    Groceries      usually    $813.78  spend less by    $79.79
+    Shopping       usually    $759.23  spend less by    $74.44
+    Other          usually    $397.89  spend less by    $39.01
+    Dining         usually    $394.42  spend less by    $38.67
+    Entertainment  usually    $346.82  spend less by       $34
+    Transport      usually    $235.25  spend less by    $23.07
+    Subscriptions  usually    $112.44  spend less by    $11.02
+  Answered by Qwen 2.5 3B on this computer (8-bit)
+====================================================================================================
+Q: What changed most since last month?
+A (9s):
+Transport expenses changed the most since last month, decreasing by $29.55 (12%) to $276.57.
+
+  Answered by Qwen 2.5 3B on this computer (8-bit)
+====================================================================================================
+Q: Show my dining spending by month as a chart
+A (48s):
+The dining expenses have fluctuated significantly over the months. Notable changes include:
+- 2026-02: $386.09
+- 2026-03: $146.73 (down by $239.36 from the previous month)
+- 2026-08: $495.88 (up by $249.15 from the previous month)
+- 2026-10: $349.57 (down by $146.31 from the previous month)
+
+The largest increase was in August, and the largest decrease was in March.
+
+  [chart] Dining spending by month, February 2026 to October 2026  spec={'kind': 'monthly_spending', 'format': 'chart', 'categories': ['Dining'], 'month': None, 'months': 10, 'limit': 10}
+      Month  Dining
+    2026-02 $386.09
+    2026-03 $146.73
+    2026-04 $159.47
+    2026-05 $144.12
+    2026-06 $245.83
+    2026-07 $434.05
+    2026-08 $495.88
+    2026-09 $253.34
+    2026-10 $349.57
+  Answered by Qwen 2.5 3B on this computer (8-bit)
+====================================================================================================
+Q: Am I on track with my budgets?
+A (45s):
+You are on track with your budgets for the categories where you spent less than the average for 2026-07, 2026-08, and 2026-09. Specifically:
+
+- **Groceries**: Spent $898.35, which is 90% of the average of $915.52.
+- **Shopping**: Spent $998.92, which is 91% of the average of $1,100.22.
+- **Entertainment**: Spent $422.89, which is 94% of the average of $450.00.
+- **Dining**: Spent $349.57, which is 87% of the average of $400.00.
+- **Transport**: Spent $87.23, which is 19% of the average of $450.00.
+
+However, you are close to exceeding your budget for **Transport** and **Groceries**.
+
+  Answered by Qwen 2.5 3B on this computer (8-bit)
+====================================================================================================
+Q: Give me a table of my top 5 purchases
+A (33s):
+Your top 5 purchases were:
+1. 18/02/2026: COSTCO WHOLESALE, Shopping, $222
+2. 08/02/2026: COSTCO WHOLESALE, Shopping, $199.84
+3. 05/02/2026: COMCAST CABLE, Bills, $192
+4. 21/02/2026: STATE FARM INSURANCE, Bills, $190.88
+5. 26/02/2026: PG&E ONLINE PMT, Bills, $187.83
+
+The largest single purchase was $222 from COSTCO WHOLESALE on February 18th.
+
+  [table] Top 5 purchases, February 2026  spec={'kind': 'top_purchases', 'format': 'table', 'categories': [], 'month': '2026-02', 'months': 8, 'limit': 5}
+          Date              Merchant Category  Amount
+    18/02/2026 COSTCO WHOLESALE #341 Shopping    $222
+    08/02/2026      COSTCO WHOLESALE Shopping $199.84
+    05/02/2026         COMCAST CABLE    Bills    $192
+    21/02/2026  STATE FARM INSURANCE    Bills $190.88
+    26/02/2026       PG&E ONLINE PMT    Bills $187.83
+  Answered by Qwen 2.5 3B on this computer (8-bit)
