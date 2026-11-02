@@ -37,3 +37,6 @@ report_examples/
 report_examples.zip
 presentation_pack/
 presentation_pack.zip
+
+# Claude Code working notes (kept locally, not in the repo)
+CLAUDE.md

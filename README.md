@@ -8,6 +8,40 @@ answers questions about your spending. One rule runs through the whole design: *
 AI only explains**. Every total, forecast and savings plan is calculated by Python, and every dollar amount
 or percentage the AI writes is checked against your real data.
 
+## Try the demo
+
+The demo account is not included in this repository, because the app's database is not committed. Create it
+first (after the [setup](#setup-windows-powershell) steps below). It loads realistic Australian transactions
+that end today, adds salary and sets budgets. Running it again rebuilds the account.
+
+```bash
+python src/make_demo_account.py
+```
+
+For the AI advisor, Ollama must be running with this model pulled:
+
+```bash
+ollama pull qwen2.5:3b-instruct-q8_0
+```
+
+Start the app, then open the address it prints (usually http://localhost:8501):
+
+```bash
+streamlit run src/dashboard.py
+```
+
+Log in with:
+
+- Username: **demo**
+- Password: **demo1234**
+
+The first AI answer can take 40 to 60 seconds while the model loads; after that, answers take about 10 to 17
+seconds. Questions to try in the AI advisor:
+
+- "How can I save $200 this month?"
+- "What changed most since last month?"
+- "Show my spending by category as a chart"
+
 ## Features
 
 - **Typed sentence entry**: "paid $12.50 at Starbucks yesterday", "got paid 2000 salary". Rules read the amount, the
@@ -131,9 +165,7 @@ The number check: amounts that don't come from your data are flagged:
    python src/train_improved_v2.py --data data/transactions_v2.csv
    ```
 
-6. Optional: create the demo account. The username is **demo**; the password is in `src/make_demo_account.py`.
-   The script loads realistic Australian transactions that end today, adds salary and sets budgets. Running it again
-   rebuilds the account.
+6. Optional: create the demo account (see [Try the demo](#try-the-demo) for the login details).
 
    ```bash
    python src/make_demo_account.py
