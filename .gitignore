@@ -31,7 +31,7 @@ hf_cache/
 models--*/
 
 # Generated material that is not part of the code
-screenshots/
+/screenshots/
 report_evidence/
 report_examples/
 report_examples.zip
