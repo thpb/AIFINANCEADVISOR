@@ -218,7 +218,6 @@ AIFINANCEADVISOR/
   HOW_IT_WORKS.md              plain-English explanation of every part
   report_results.md            model results (written by evaluate_models.py)
   PROGRESS.md                  build log: phases, decisions, changes from the spec
-  CLAUDE.md                    working rules for Claude Code on this project
   requirements.txt             Python packages
   .streamlit/config.toml       colours and fonts of the app
   data/
